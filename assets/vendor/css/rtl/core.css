@@ -7723,6 +7723,16 @@ label.btn {
   background-color: #ea5455;
   border-color: #ea5455;
 }
+.btn-primary {
+  color: #fff;
+  background-color: var(--bs-primary);
+  border-color: var(--bs-primary);
+}
+.btn-primary:hover {
+  color: #fff;
+  background-color: #8a7ff5;
+  border-color: #8a7ff5;
+}
 .btn-danger:hover {
   color: #fff !important;
   background-color: #d34c4d !important;
