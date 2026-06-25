@@ -1,0 +1,36 @@
+{
+    "data": [
+        {
+            "id": 1,
+            "email": "alice.dupont@example.com",
+            "nom": "Dupont",
+            "prenom": "Alice",
+            "role": "Manager",
+            "tel": "+21612345678"
+        },
+        {
+            "id": 2,
+            "email": "mohamed.benali@example.com",
+            "nom": "Ben Ali",
+            "prenom": "Mohamed",
+            "role": "Développeur",
+            "tel": "+21698765432"
+        },
+        {
+            "id": 3,
+            "email": "sonia.kacem@example.com",
+            "nom": "Kacem",
+            "prenom": "Sonia",
+            "role": "Design UI/UX",
+            "tel": "+21655512345"
+        },
+        {
+            "id": 4,
+            "email": "karim.trabelsi@example.com",
+            "nom": "Trabelsi",
+            "prenom": "Karim",
+            "role": "Modérateur",
+            "tel": "+21644498765"
+        }
+    ]
+}

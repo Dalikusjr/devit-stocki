@@ -1,0 +1,25 @@
+{
+  "data": [
+    {
+      "idproj": 1,
+      "titre": "Site Web",
+      "couttot": 3000,
+      "statut": "Partiellement payé",
+      "tranches": [
+        {"commentaire":"Avance","echeance":1000,"dateech":"01/04/2025","etat":"Payé"},
+        {"commentaire":"Tranche 2","echeance":1000,"dateech":"01/05/2025","etat":"Payé"},
+        {"commentaire":"Tranche 3","echeance":1000,"etat":"En attente"}
+      ]
+    },
+    {
+      "titre": "App Mobile",
+      "couttot": 5000,
+      "statut": "En cours",
+      "tranches": [
+        {"commentaire":"Avance","echeance":2000,"dateech":"15/04/2025","etat":"Payé"},
+        {"commentaire":"Tranche 2","echeance":1500,"etat":"En attente"},
+        {"commentaire":"Tranche 3","echeance":1500,"etat":"En attente"}
+      ]
+    }
+  ]
+}

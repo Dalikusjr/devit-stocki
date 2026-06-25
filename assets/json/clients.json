@@ -1,0 +1,18 @@
+{
+  "data": [
+    {
+      "id": 1,
+      "client": "Dali",
+      "telephone": "+216 20 123 456",
+      "email": "dali@example.com",
+      "nbr_projets": 3
+    },
+    {
+      "id": 2,
+      "client": "Sara",
+      "telephone": "+33 6 12 34 56 78",
+      "email": "sara@example.com",
+      "nbr_projets": 5
+    }
+  ]
+}

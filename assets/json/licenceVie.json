@@ -1,0 +1,45 @@
+{
+    "data": [
+        {
+            "id": 1,
+            "client": "Société Alpha",
+            "date_debut": "2025-01-15",
+            "montant_a_payer": 5000,
+            "reste_a_payer": 2000,
+            "historique_paiements": [
+                {
+                    "date": "2025-01-20",
+                    "montant": 2000,
+                    "mode": "Virement bancaire"
+                },
+                {
+                    "date": "2025-02-10",
+                    "montant": 1000,
+                    "mode": "Carte bancaire"
+                }
+            ]
+        },
+        {
+            "id": 2,
+            "client": "Entreprise Beta",
+            "date_debut": "2025-03-01",
+            "montant_a_payer": 3000,
+            "reste_a_payer": 0,
+            "historique_paiements": [
+                {
+                    "date": "2025-03-05",
+                    "montant": 3000,
+                    "mode": "Espèces"
+                }
+            ]
+        },
+        {
+            "id": 3,
+            "client": "Startup Gamma",
+            "date_debut": "2025-04-12",
+            "montant_a_payer": 7000,
+            "reste_a_payer": 7000,
+            "historique_paiements": []
+        }
+    ]
+}

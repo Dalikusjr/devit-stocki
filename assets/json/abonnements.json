@@ -1,0 +1,36 @@
+{
+    "data": [
+        {
+            "id": 1,
+            "client": "Ali Ben Salem",
+            "type_abonnement": "Mensuel",
+            "montant_abonnement": 50,
+            "date_debut_abonnement": "2025-01-15",
+            "etat_paiement": "Payé"
+        },
+        {
+            "id": 2,
+            "client": "Sara Trabelsi",
+            "type_abonnement": "Trimestre",
+            "montant_abonnement": 130,
+            "date_debut_abonnement": "2025-02-01",
+            "etat_paiement": "Non payé"
+        },
+        {
+            "id": 3,
+            "client": "Mohamed Ayari",
+            "type_abonnement": "Annuel",
+            "montant_abonnement": 480,
+            "date_debut_abonnement": "2024-12-20",
+            "etat_paiement": "Payé"
+        },
+        {
+            "id": 4,
+            "client": "Amira Gharbi",
+            "type_abonnement": "Mensuel",
+            "montant_abonnement": 50,
+            "date_debut_abonnement": "2025-03-10",
+            "etat_paiement": "Non payé"
+        }
+    ]
+}
