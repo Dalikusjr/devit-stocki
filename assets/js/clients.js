@@ -283,9 +283,9 @@ $(document).ready(function () {
     };
     let lnk;
     if (editingRow) {
-      lnk = "/stocki_devit/dashboard/clients/update.php";
+      lnk = "clients/update.php";
     } else {
-      lnk = "/stocki_devit/dashboard/clients/add.php";
+      lnk = "clients/add.php";
     }
     $.post(
       lnk,
@@ -319,7 +319,7 @@ $(document).ready(function () {
 
   $("#confirmDeleteBtn").on("click", function () {
     if (clientToDelete) {
-      const lnk = "/stocki_devit/dashboard/clients/delete.php";
+      const lnk = "clients/delete.php";
       $.post(
         lnk,
         { clientToDelete },

@@ -30,6 +30,6 @@ try {
 } catch (PDOException $e) {
     echo json_encode([
         'success' => false,
-        'message' => 'Impossible d\'ajouter le client'
+        'message' => 'Impossible de supprimer le client'
     ]);
 }
