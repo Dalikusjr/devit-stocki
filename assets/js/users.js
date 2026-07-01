@@ -122,12 +122,9 @@ document.addEventListener("DOMContentLoaded", function () {
           "Nouveau utilisateur";
 
         // Réinitialiser les champs
-        offCanvasElement.querySelector(".dt-userLName").value = "";
-        offCanvasElement.querySelector(".dt-userFName").value = "";
-        $(".typeahead").typeahead("val", "");
-        offCanvasElement.querySelector(".dt-email").value = "";
-        offCanvasElement.querySelector(".dt-mDp").value = "";
-        offCanvasElement.querySelector(".dt-tel").value = "";
+        // $(".typeahead").typeahead("val", "");
+        formAddNewRecord.reset();
+        fv.resetForm(true);
         fv.enableValidator("mDp", "notEmpty");
         offCanvasEl.show();
       });
@@ -325,13 +322,14 @@ $(document).ready(function () {
         }),
         type: "column",
         renderer: (api, rowIdx, columns) => {
-          const data = $.map(columns, (col) =>
-            col.title !== ""
-              ? `<tr data-dt-row="${col.rowIndex}" data-dt-column="${col.columnIndex}">
-                  <td>${col.title}:</td><td>${col.data}</td>
-                </tr>`
-              : "",
-          ).join("");
+          const data = $.map(columns, (col) => {
+            if (col.title !== "" && col.title !== "Actions") {
+              let content = col.data;
+              return `<tr data-dt-row="${col.rowIndex}" data-dt-column="${col.columnIndex}">
+               <td>${col.title}:</td><td>${content}</td>
+             </tr>`;
+            }
+          }).join("");
 
           const table = data
             ? $('<table class="table"/><tbody />').append(data)
