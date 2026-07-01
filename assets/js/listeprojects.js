@@ -2,8 +2,6 @@
 // Déclarations et initialisations
 // ==========================
 let projets;
-let projectsStore = {};
-let tranchesStore = {};
 let listePro = null;
 let fv;
 let editingTranche = null;
@@ -27,6 +25,15 @@ $(document).ready(function () {
         validators: {
           notEmpty: { message: "Le montant de tranche est requis" },
           numeric: { message: "Veuillez saisir un nombre valide" },
+          callback: {
+            message: "Le montant ne peut pas être inférieur à 0",
+            callback: function (input) {
+              const montant = parseFloat(input.value);
+              if (input.value === "") return true;
+              return montant > 0;
+            },
+          },
+          enabled: true,
         },
       },
       dateech: {
@@ -141,7 +148,6 @@ $(document).ready(function () {
       // Génération des cartes projets
       // ==========================
       projets.forEach(function (projet) {
-        projectsStore[projet.idproj] = projet;
         // Card principale
         let div = $("<div></div>")
           .addClass(`project-card project-card-${projet.idproj}`)
@@ -196,8 +202,6 @@ $(document).ready(function () {
           // --------------------------
 
           projet.tranches.forEach(function (tranche) {
-            tranchesStore[tranche.idpay] = tranche;
-            ////////////////////////////////////////////////////////////////ici la finction renderTranche
             ul.append(renderTranche(tranche));
           });
 
@@ -413,325 +417,3 @@ $("#confirmDeleteBtn").on("click", function () {
     "json",
   );
 });
-// ==========================
-// Ajout du CSS pour styliser les composants
-// ==========================
-$("head").append(`
-  <style>
-    .loading-spinner, .no-projects, .error-message {
-      text-align: center;
-      padding: 30px;
-      font-size: 18px;
-      color: #6c757d;
-    }
-    
-    .loading-spinner i {
-      margin-right: 10px;
-      color: #4361ee;
-    }
-    
-    .error-message i {
-      color: #e74c3c;
-      margin-right: 10px;
-    }
-    
-    .no-projects i {
-      color: #95a5a6;
-      margin-right: 10px;
-    }
-    
-    .project-card {
-      background: white;
-      border-radius: 12px;
-      overflow: hidden;
-      margin-bottom: 25px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-      transition: all 0.3s ease;
-    }
-    
-    .project-card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-    }
-    
-    .project-header {
-      display: flex;
-      align-items: center;
-      padding: 20px;
-      background: linear-gradient(to right, rgba(255, 255, 255, 0.95) 0%,rgba(255, 255, 255, 0.7) 50%, rgba(255, 255, 255, 0.4) 100%), 
-              url("../assets/img/pages/profile-banner.png");
-      background-size: cover;
-      background-position: center;
-      border-bottom: 1px solid #e3e6f0;
-    }
-    
-    .project-footer {
-      display: flex;
-      align-items: center;
-      padding: 20px;
-      background: linear-gradient(to left, rgba(255, 255, 255, 0.95) 0%,rgba(255, 255, 255, 0.7) 50%, rgba(255, 255, 255, 0.4) 100%), 
-              url("../assets/img/front-pages/backgrounds/footer-bg-light.png");
-      background-size: cover;
-      background-position: center;
-      border-bottom: 1px solid #e3e6f0;
-    }
-
-    .project-icon {
-      width: 50px;
-      height: 50px;
-      border-radius: 50%;
-      background: #4361ee;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-right: 15px;
-      flex-shrink: 0;
-    }
-    
-    .project-icon i {
-      font-size: 20px;
-      color: white;
-    }
-    
-    .project-info {
-      flex-grow: 1;
-    }
-    
-    .project-title {
-      font-weight: 700;
-      color: #2d3748;
-      margin: 0 0 5px 0;
-      font-size: 1.25rem;
-    }
-    
-    .project-details {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    
-    .amount-badge {
-      background: #4361ee;
-      color: white;
-      padding: 4px 10px;
-      border-radius: 20px;
-      font-weight: 600;
-      font-size: 0.85rem;
-    }
-    
-    .status-badge {
-      padding: 4px 10px;
-      border-radius: 20px;
-      font-weight: 600;
-      font-size: 0.85rem;
-    }
-    
-    .status-terminé {
-      background: #4cc9f0;
-      color: white;
-    }
-    
-    .status-en-cours {
-      background: #f72585;
-      color: white;
-    }
-    
-    .status-en-attente {
-      padding:0px 5px 0px 5px;
-      background: #ffb800;
-      color: black;
-    }
-    
-    .progress-container {
-      padding: 15px 20px;
-      background: #f8f9fa;
-    }
-    
-    .progress-labels {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 8px;
-      font-size: 0.85rem;
-      color: #6c757d;
-    }
-    
-    .progress {
-      height: 8px;
-      background-color: #e9ecef;
-      border-radius: 4px;
-      overflow: hidden;
-    }
-    
-.progress-bar {
-  height: 100%;
-  background: linear-gradient(to right, #4361ee, #3a0ca3);
-  background-size: 1000px; /* Le dégradé ne s'étire pas, il est "découvert" par la barre */
-  transition: width 0.5s ease;
-  border-radius: 4px; /* Un petit arrondi rend l'animation plus douce */
-}
-    
-    .tranches-container {
-      padding: 20px;
-    }
-    
-    .tranches-title {
-      font-size: 1.1rem;
-      color: #2d3748;
-      margin: 0 0 15px 0;
-      display: flex;
-      align-items: center;
-    }
-    
-    .tranches-title i {
-      margin-right: 8px;
-      color: #4361ee;
-    }
-    
-    .tranches-list {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-    }
-    
-    .tranche-item {
-      padding: 12px 0;
-      border-bottom: 1px solid #f1f3f9;
-    }
-    
-    .tranche-item:last-child {
-      border-bottom: none;
-    }
-    
-    .tranche-content {
-      display: flex;
-      align-items: center;
-    }
-    
-    .tranche-icon {
-      width: 36px;
-      height: 36px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-right: 12px;
-      flex-shrink: 0;
-    }
-    
-    .tranche-icon.paid {
-      background: rgba(76, 201, 240, 0.15);
-      color: #4cc9f0;
-    }
-    
-    .tranche-icon.unpaid {
-      background: rgba(247, 37, 133, 0.15);
-      color: #f72585;
-    }
-    
-    .tranche-info {
-      flex-grow: 1;
-    }
-    
-    .tranche-name {
-      font-weight: 600;
-      color: #2d3748;
-      margin-bottom: 4px;
-    }
-    
-    .tranche-details {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      font-size: 0.9rem;
-    }
-    
-    .tranche-amount {
-      color: #4361ee;
-      font-weight: 600;
-    }
-
-    
-    .tranche-date {
-      color: #e74c3c;
-      display: flex;
-      align-items: center;
-    }
-  
-    
-    .pay-date {
-      color: #198754;
-      display: flex;
-      align-items: center;
-    }
-    
-    .tranche-status {
-      padding: 5px 12px;
-      border-radius: 20px;
-      font-size: 0.8rem;
-      font-weight: 600;
-    }
-    
-    .tranche-status.paid {
-      background: rgba(76, 201, 240, 0.15);
-      color: #4cc9f0;
-    }
-    
-    .tranche-status.pending {
-      background: rgba(255, 184, 0, 0.15);
-      color: #ffb800;
-    }
-    
-    .tranche-status.unpaid {
-      background: rgba(247, 37, 133, 0.15);
-      color: #f72585;
-    }
-    
-    @media (max-width: 768px) {
-      .project-header {
-        flex-direction: column;
-        text-align: center;
-      }
-      
-      .project-icon {
-        margin-right: 0;
-        margin-bottom: 10px;
-      }
-      
-      .project-details {
-        justify-content: center;
-      }
-      
-      .tranche-content {
-        flex-wrap: wrap;
-      }
-      
-      .tranche-status {
-        margin-top: 10px;
-        width: 100%;
-        text-align: center;
-      }
-    }
-                .check_input {
-              position: absolute;
-              opacity: 0;
-              pointer-events: none;
-          }
-          .check_input:checked + .badge {
-              background-color: #28a745 !important;
-              color: #fff !important;
-              box-shadow: 0 0 10px rgba(40,167,69,0.6);
-          }
-          .check_label {
-            cursor: pointer;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-          }
-          .check_label:hover {
-            transform: scale(1.05);
-            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-          }
-            .bg-label-success{
-            background-color: #28a745 !important;
-            color: #fff !important;
-            }
-  </style>
-`);
