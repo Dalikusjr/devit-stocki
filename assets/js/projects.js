@@ -5,7 +5,7 @@
 // ===============================
 let fv, offCanvasEl, table;
 let editingRow = null;
-let rowToDelete = null; // pour stocker la ligne à supprimer
+let projToDelete = null;
 
 document.addEventListener("DOMContentLoaded", function () {
   // ===============================
@@ -50,6 +50,7 @@ document.addEventListener("DOMContentLoaded", function () {
           offCanvasElement.querySelector(".dt-clientLName").readOnly = false;
           offCanvasElement.querySelector(".dt-tel").readOnly = false;
           offCanvasElement.querySelector(".dt-addr").readOnly = false;
+          fv.resetForm(true);
           offCanvasEl.show();
         });
         const emailInput = offCanvasElement.querySelector(".dt-email");
@@ -113,6 +114,16 @@ document.addEventListener("DOMContentLoaded", function () {
           validators: {
             notEmpty: { message: "Le coût total est requis" },
             numeric: { message: "Veuillez saisir un nombre valide" },
+            callback: {
+              message: "Le coût total ne peut pas être inférieur ou égale à 0",
+              callback: function (input) {
+                const coutTotal = parseFloat(input.value);
+                if (input.value === "") return true;
+                if (isNaN(coutTotal)) return true;
+                return coutTotal > 0;
+              },
+            },
+            enabled: true,
           },
         },
         addr: {
@@ -139,6 +150,12 @@ document.addEventListener("DOMContentLoaded", function () {
                 );
                 const avance = parseFloat(input.value);
                 if (input.value === "") return true;
+                if (avance < 0) {
+                  return {
+                    valid: false,
+                    message: "Le montant ne peut pas être inférieur à 0",
+                  };
+                }
                 if (isNaN(coutTotal)) return true;
                 return avance <= coutTotal;
               },
@@ -332,11 +349,14 @@ $(document).ready(function () {
         }),
         type: "column",
         renderer: (api, rowIdx, columns) => {
-          const data = $.map(columns, (col) =>
-            col.title !== ""
-              ? `<tr data-dt-row="${col.rowIndex}" data-dt-column="${col.columnIndex}"><td>${col.title}:</td><td>${col.data}</td></tr>`
-              : "",
-          ).join("");
+          const data = $.map(columns, (col) => {
+            if (col.title !== "" && col.title !== "Actions") {
+              let content = col.data;
+              return `<tr data-dt-row="${col.rowIndex}" data-dt-column="${col.columnIndex}">
+               <td>${col.title}:</td><td>${content}</td>
+             </tr>`;
+            }
+          }).join("");
           return data
             ? $('<table class="table"/><tbody />').append(data)
             : false;
@@ -445,8 +465,7 @@ $(document).ready(function () {
   // Événements de suppression
   // ===============================
   const ModalEl = document.getElementById("confirmDeleteModal");
-  const Modal = new bootstrap.Modal(ModalEl);
-  let projToDelete = null; // Ligne à supprimer
+  const Modal = new bootstrap.Modal(ModalEl); // Ligne à supprimer
 
   // Clic sur le bouton "Supprimer" dans le tableau
   $(".datatables-projects tbody").on("click", ".delete-record", function () {
