@@ -1,10 +1,10 @@
 "use strict";
-
+let table;
 // ===============================
 // Initialisation DataTable
 // ===============================
 $(document).ready(function () {
-  $(".datatables-paiments").DataTable({
+  table =$(".datatables-paiments").DataTable({
     responsive: true,
     language: {
       url: "https://cdn.datatables.net/plug-ins/1.13.6/i18n/fr-FR.json",
@@ -45,7 +45,7 @@ $(document).ready(function () {
         orderable: true,
         responsivePriority: 1,
         render: (data, type, row) =>
-          `<a href="dashboard.php?page=listeprojects&id=${row.idclient}" class="fw-bold">${data}</a>`,
+          `<span class="fw-bold">${data}</span>`,
       },
       {
         targets: 3,
@@ -113,6 +113,17 @@ $(document).ready(function () {
           $(this).css("background-color", $(this).data("bgcolor"));
         },
       );
+      $("head").append(`
+        <style>
+          .datatables-paiments tbody tr:hover {
+              cursor: pointer;
+          }
+        </style>
+      `);
     },
+  });
+  $(".datatables-paiments tbody").on("click", "tr", function () {
+    let id = table.row($(this).closest("tr")).data().idclient; // récupérer la ligne
+    window.location.href = 'dashboard.php?page=listeprojects&id=' + id;
   });
 });
