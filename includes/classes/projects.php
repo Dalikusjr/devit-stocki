@@ -15,12 +15,7 @@ class Projects
         $stmt->execute();
         return (int)$stmt->fetchColumn(); // retourne un nombre
     }
-    public function getClient($email)
-    {
-        $stmt = $this->conn->prepare("SELECT * FROM clients WHERE email=:email");
-        $stmt->execute([':email' => $email]);
-        return $stmt->fetch(PDO::FETCH_ASSOC);
-    }
+
     public function getAll()
     {
         $stmt = $this->conn->prepare(
@@ -31,6 +26,7 @@ class Projects
             pr.daterenouv,
             pr.couttot,
             pr.acces,
+            cl.idclient,
             cl.nom clnom,
             cl.tel cltel,
             calculerResteProjet(pr.idproj) AS restepaye
