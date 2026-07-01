@@ -18,6 +18,13 @@ class Clients
 
     }
 
+    public function getByEmail($email)
+    {
+        $stmt = $this->conn->prepare("SELECT * FROM clients WHERE email=:email");
+        $stmt->execute([':email' => $email]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
     public function getAll()
     {
         $stmt = $this->conn->prepare(
