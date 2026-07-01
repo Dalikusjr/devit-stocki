@@ -7,7 +7,7 @@ let fv;
 let offCanvasEl;
 let table;
 let editingRow = null;
-let rowToDelete = null;
+let clientToDelete = null;
 
 // ===============================
 // DOMContentLoaded : Initialisation du formulaire et OffCanvas
@@ -27,10 +27,7 @@ document.addEventListener("DOMContentLoaded", function () {
         offCanvasElement.querySelector("#titre").innerHTML = "Nouveau client";
 
         // Réinitialiser les champs
-        offCanvasElement.querySelector(".dt-Name").value = "";
-        offCanvasElement.querySelector(".dt-email").value = "";
-        offCanvasElement.querySelector(".dt-addr").value = "";
-        offCanvasElement.querySelector(".dt-tel").value = "";
+        formAddNewRecord.reset();
         offCanvasEl.show();
       });
     }
@@ -121,7 +118,13 @@ $(document).ready(function () {
         searchable: false,
         render: () => "",
       },
-      { targets: 1, orderable: true,className: "text-center", searchable: false, responsivePriority: 4 },
+      {
+        targets: 1,
+        orderable: true,
+        className: "text-center",
+        searchable: false,
+        responsivePriority: 4,
+      },
       {
         targets: 2,
         orderable: true,
@@ -198,13 +201,14 @@ $(document).ready(function () {
         }),
         type: "column",
         renderer: (api, rowIdx, columns) => {
-          const data = $.map(columns, (col) =>
-            col.title !== ""
-              ? `<tr data-dt-row="${col.rowIndex}" data-dt-column="${col.columnIndex}">
-                  <td>${col.title}:</td><td>${col.data}</td>
-                </tr>`
-              : "",
-          ).join("");
+          const data = $.map(columns, (col) => {
+            if (col.title !== "" && col.title !== "Actions") {
+              let content = col.data;
+              return `<tr data-dt-row="${col.rowIndex}" data-dt-column="${col.columnIndex}">
+               <td>${col.title}:</td><td>${content}</td>
+             </tr>`;
+            }
+          }).join("");
 
           const table = data
             ? $('<table class="table"/><tbody />').append(data)
@@ -261,8 +265,7 @@ $(document).ready(function () {
 
     const offCanvasElement = document.querySelector("#add-new-record");
     offCanvasEl = new bootstrap.Offcanvas(offCanvasElement);
-    offCanvasElement.querySelector("#titre").innerHTML =
-      "Modifier le client";
+    offCanvasElement.querySelector("#titre").innerHTML = "Modifier le client";
     offCanvasElement.querySelector(".dt-Name").value = data.nom;
     offCanvasElement.querySelector(".dt-addr").value = data.adresse;
     offCanvasElement.querySelector(".dt-tel").value = data.tel;
@@ -281,24 +284,19 @@ $(document).ready(function () {
       tel: $("#tel").val(),
       email: $("#email").val(),
     };
-    let lnk;
-    if (editingRow) {
-      lnk = "clients/update.php";
-    } else {
-      lnk = "clients/add.php";
-    }
+    let lnk = editingRow ? "clients/update.php" : "clients/add.php";
     $.post(
       lnk,
       formData,
       (res) => {
         if (res.success) {
           table.ajax.reload(null, false);
-          showTopNotification(res.message, "success","check");
+          showTopNotification(res.message, "success", "check");
           offCanvasEl.hide();
           document.getElementById("form-add-new-record").reset();
           editingRow = null;
         } else {
-          showTopNotification(res.message, "danger","ban");
+          showTopNotification(res.message, "danger", "ban");
         }
       },
       "json",
@@ -310,7 +308,6 @@ $(document).ready(function () {
   // ===============================
   const deleteModalEl = document.getElementById("confirmDeleteModal");
   const deleteModal = new bootstrap.Modal(deleteModalEl);
-  let clientToDelete;
   $(".datatables-clients tbody").on("click", ".delete-record", function () {
     clientToDelete = table.row($(this).closest("tr")).data().idclient;
     $(".modal-body").text("Êtes-vous sûr de vouloir supprimer ce client ?");
@@ -326,11 +323,11 @@ $(document).ready(function () {
         (res) => {
           if (res.success) {
             table.ajax.reload(null, false);
-            showTopNotification(res.message, "success","check");
+            showTopNotification(res.message, "success", "check");
             clientToDelete = null;
             deleteModal.hide();
           } else {
-            showTopNotification(res.message, "danger","ban");
+            showTopNotification(res.message, "danger", "ban");
           }
         },
         "json",
