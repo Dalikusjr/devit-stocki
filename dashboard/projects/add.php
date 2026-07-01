@@ -21,7 +21,7 @@ require_once "../../includes/classes/payments.php";
 $db = (new Database())->connect();
 $projects = new Projects($db);
 $clients = new Clients($db);
-$payments = new Payments($db);
+
 
 // Ajoute le patient
 $titre = trim($_POST['titre']);
@@ -36,7 +36,7 @@ $avancepaye = trim($_POST['avancepaye']);
 $comment = trim($_POST['comment'] );
 $acces = trim($_POST['acces'] );
 try {
-    $client = $projects->getClient($email);
+    $client = $clients->getByEmail($email);
     if ($client) {
         $idclient = $client['idclient'];
     } else {
@@ -48,7 +48,8 @@ try {
     if ($avancepaye > 0) {
         $dateech = date('Y-m-d');
         $datepay = date('Y-m-d');
-        $etat = "payer";
+        $status = "payer";
+        $payments = new Payments($db);
         $payments->add($avancepaye, $comment, $dateech, $status, $idproj,$datepay);
     }
     echo json_encode([
