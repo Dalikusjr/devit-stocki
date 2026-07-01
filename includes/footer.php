@@ -56,7 +56,7 @@
 <script src="../assets/vendor/libs/i18n/i18n.js"></script>
 <script src="../assets/vendor/libs/typeahead-js/typeahead.js"></script>
 <script src="../assets/vendor/js/menu.js"></script>
-
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0/dist/js/select2.min.js"></script>
 <!-- endbuild -->
 
 <!-- Vendors JS -->
