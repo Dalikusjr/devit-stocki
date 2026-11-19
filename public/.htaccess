@@ -1,0 +1,9 @@
+RewriteEngine On
+# Réécrire l'URL vers /api/index.php en passant la valeur comme paramètre 'api/'
+RewriteRule ^api/(.*)$ api/index.php [QSA,L]
+# Si la requête n'est pas un fichier existant et pas un dossier existant
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+
+# Réécrire l'URL vers index.php en passant la valeur comme paramètre 'page'
+RewriteRule ^p-([a-zA-Z0-9_-]+)$ index.php?page=$1 [QSA,L]

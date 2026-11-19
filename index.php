@@ -1,13 +1,16 @@
 <?php
+require_once "config.php";
+
+use App\Helpers\Helpers;
 // ========================== 
 // INITIALISATION PHP
 // ==========================
 session_start();
-require_once "includes/classes/functions.php";
 
-if (isset($_SESSION['username'])) {
-    redirect('dashboard/dashboard.php');
-}
+
+
+  Helpers::redirect('public/index.php');
+
 ?>
 <!DOCTYPE html>
 
