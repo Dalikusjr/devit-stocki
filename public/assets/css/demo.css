@@ -1,0 +1,575 @@
+/*
+* demo.css
+* File include item demo only specific css only
+******************************************************************************/
+
+.light-style .menu .app-brand.demo {
+  height: 64px;
+}
+
+.dark-style .menu .app-brand.demo {
+  height: 64px;
+}
+
+.app-brand-logo.demo {
+  -ms-flex-align: center;
+  align-items: center;
+  -ms-flex-pack: center;
+  justify-content: center;
+  display: -ms-flexbox;
+  display: flex;
+  width: 34px;
+  height: 24px;
+}
+
+.app-brand-logo.demo svg {
+  width: 35px;
+  height: 24px;
+}
+
+.app-brand-text.demo {
+  font-size: 1.375rem;
+}
+
+/* ! For .layout-navbar-fixed added fix padding top tpo .layout-page */
+.layout-navbar-fixed .layout-wrapper:not(.layout-without-menu) .layout-page {
+  padding-top: 64px !important;
+}
+.layout-navbar-fixed
+  .layout-wrapper:not(.layout-horizontal):not(.layout-without-menu)
+  .layout-page {
+  padding-top: 78px !important;
+}
+/* Navbar page z-index issue solution */
+.content-wrapper .navbar {
+  z-index: auto;
+}
+
+/*
+* Content
+******************************************************************************/
+
+.demo-blocks > * {
+  display: block !important;
+}
+
+.demo-inline-spacing > * {
+  margin: 1rem 0.375rem 0 0 !important;
+}
+
+/* ? .demo-vertical-spacing class is used to have vertical margins between elements. To remove margin-top from the first-child, use .demo-only-element class with .demo-vertical-spacing class. For example, we have used this class in forms-input-groups.html file. */
+.demo-vertical-spacing > * {
+  margin-top: 1rem !important;
+  margin-bottom: 0 !important;
+}
+.demo-vertical-spacing.demo-only-element > :first-child {
+  margin-top: 0 !important;
+}
+
+.demo-vertical-spacing-lg > * {
+  margin-top: 1.875rem !important;
+  margin-bottom: 0 !important;
+}
+.demo-vertical-spacing-lg.demo-only-element > :first-child {
+  margin-top: 0 !important;
+}
+
+.demo-vertical-spacing-xl > * {
+  margin-top: 5rem !important;
+  margin-bottom: 0 !important;
+}
+.demo-vertical-spacing-xl.demo-only-element > :first-child {
+  margin-top: 0 !important;
+}
+
+.rtl-only {
+  display: none !important;
+  text-align: left !important;
+  direction: ltr !important;
+}
+
+[dir="rtl"] .rtl-only {
+  display: block !important;
+}
+
+/* Dropdown buttons going out of small screens */
+@media (max-width: 576px) {
+  #dropdown-variation-demo .btn-group .text-truncate {
+    width: 254px;
+    position: relative;
+  }
+  #dropdown-variation-demo .btn-group .text-truncate::after {
+    position: absolute;
+    top: 45%;
+    right: 0.65rem;
+  }
+}
+
+/*
+* Layout demo
+******************************************************************************/
+
+.layout-demo-wrapper {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-align: center;
+  -ms-flex-align: center;
+  align-items: center;
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+  -ms-flex-direction: column;
+  flex-direction: column;
+  margin-top: 1rem;
+}
+.layout-demo-placeholder img {
+  width: 900px;
+}
+.layout-demo-info {
+  text-align: center;
+  margin-top: 1rem;
+}
+/* Le wrapper twitter-typeahead doit prendre tout l'espace restant */
+.input-group .twitter-typeahead {
+  flex: 1 1 auto;
+  width: 1%;
+  min-width: 0;
+  display: block !important; /* Typeahead met display:inline-block par défaut */
+}
+
+.input-group .twitter-typeahead .tt-input,
+.input-group .twitter-typeahead .tt-hint {
+  width: 100% !important;
+  border-radius: 0 var(--bs-border-radius) var(--bs-border-radius) 0 !important;
+  background-color: transparent !important;
+  color: var(--bs-body-color) !important;
+  border: none !important; /* la bordure est gérée par .input-group */
+  padding: 0.422rem 0.875rem !important;
+}
+
+/* La bordure globale sur l'input-group */
+.input-group:has(.twitter-typeahead) {
+  border: 1px solid var(--bs-border-color);
+  border-radius: var(--bs-border-radius);
+}
+
+.input-group:has(.twitter-typeahead):focus-within {
+  border-color: var(--bs-primary);
+  box-shadow: 0 0 0 0.2rem rgba(var(--bs-primary-rgb), 0.25);
+}
+
+/* Retirer la bordure Bootstrap par défaut des éléments enfants */
+.input-group:has(.twitter-typeahead) .input-group-text {
+  border: none !important;
+  background-color: transparent !important;
+}
+
+/* Dropdown */
+.tt-menu {
+  background-color: var(--bs-body-bg);
+  border: 1px solid var(--bs-border-color);
+  border-radius: var(--bs-border-radius);
+  padding: 4px 0;
+  min-width: 100%;
+  z-index: 9999;
+  margin-top: 2px;
+}
+
+.tt-suggestion {
+  padding: 6px 16px;
+  color: var(--bs-body-color);
+  cursor: pointer;
+}
+
+.tt-suggestion:hover,
+.tt-suggestion.tt-cursor {
+  background-color: var(--bs-primary);
+  color: #7f77f0;
+}
+#notification {
+  position: fixed;
+  top: 25px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  min-width: 350px;
+  padding: 12px 20px;
+  border-radius: 8px;
+}
+/* 1. Force le plein écran sur Mobile uniquement */
+@media (max-width: 767px) {
+  #add-new-record {
+    width: 100% !important;
+  }
+}
+
+/* Forcer Select2 à prendre le style Bootstrap */
+.select2-container--default .select2-selection--single {
+  height: 44px !important; /* Hauteur standard des inputs Vuexy */
+  padding: 8px 12px !important;
+  border: 1px solid #d4d8dd !important;
+  border-radius: 0.375rem !important;
+}
+
+/* Aligner le texte verticalement */
+.select2-container--default
+  .select2-selection--single
+  .select2-selection__rendered {
+  line-height: 26px !important;
+  color: #6f6b7d !important;
+}
+
+/* Corriger l'icône de la flèche */
+.select2-container--default
+  .select2-selection--single
+  .select2-selection__arrow {
+  height: 42px !important;
+}
+
+/* Important : corriger le bug d'affichage dans le input-group */
+.input-group .select2-container {
+  flex: 1 1 auto;
+}
+
+.loading-spinner,
+.no-projects,
+.error-message {
+  text-align: center;
+  padding: 30px;
+  font-size: 18px;
+  color: #6c757d;
+}
+
+.loading-spinner i {
+  margin-right: 10px;
+  color: #4361ee;
+}
+
+.error-message i {
+  color: #e74c3c;
+  margin-right: 10px;
+}
+
+.no-projects i {
+  color: #95a5a6;
+  margin-right: 10px;
+}
+
+.project-card {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 25px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+}
+
+.project-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+}
+
+.project-header {
+  display: flex;
+  align-items: center;
+  padding: 20px;
+  background:
+    linear-gradient(
+      to right,
+      rgba(255, 255, 255, 0.95) 0%,
+      rgba(255, 255, 255, 0.7) 50%,
+      rgba(255, 255, 255, 0.4) 100%
+    ),
+    url("../assets/img/pages/profile-banner.png");
+  background-size: cover;
+  background-position: center;
+  border-bottom: 1px solid #e3e6f0;
+}
+
+.project-footer {
+  display: flex;
+  align-items: center;
+  padding: 20px;
+  background:
+    linear-gradient(
+      to left,
+      rgba(255, 255, 255, 0.95) 0%,
+      rgba(255, 255, 255, 0.7) 50%,
+      rgba(255, 255, 255, 0.4) 100%
+    ),
+    url("../assets/img/front-pages/backgrounds/footer-bg-light.png");
+  background-size: cover;
+  background-position: center;
+  border-bottom: 1px solid #e3e6f0;
+}
+
+.project-icon {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: #4361ee;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 15px;
+  flex-shrink: 0;
+}
+
+.project-icon i {
+  font-size: 20px;
+  color: white;
+}
+
+.project-info {
+  flex-grow: 1;
+}
+
+.project-title {
+  font-weight: 700;
+  color: #2d3748;
+  margin: 0 0 5px 0;
+  font-size: 1.25rem;
+}
+
+.project-details {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.amount-badge {
+  background: #4361ee;
+  color: white;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.status-badge {
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.status-terminé {
+  background: #4cc9f0;
+  color: white;
+}
+
+.status-en-cours {
+  background: #f72585;
+  color: white;
+}
+
+.status-en-attente {
+  padding: 0px 5px 0px 5px;
+  background: #ffb800;
+  color: black;
+}
+
+.progress-container {
+  padding: 15px 20px;
+  background: #f8f9fa;
+}
+
+.progress-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 0.85rem;
+  color: #6c757d;
+}
+
+.progress {
+  height: 8px;
+  background-color: #e9ecef;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(to right, #4361ee, #3a0ca3);
+  background-size: 1000px; /* Le dégradé ne s'étire pas, il est "découvert" par la barre */
+  transition: width 0.5s ease;
+  border-radius: 4px; /* Un petit arrondi rend l'animation plus douce */
+}
+
+.tranches-container {
+  padding: 20px;
+}
+
+.tranches-title {
+  font-size: 1.1rem;
+  color: #2d3748;
+  margin: 0 0 15px 0;
+  display: flex;
+  align-items: center;
+}
+
+.tranches-title i {
+  margin-right: 8px;
+  color: #4361ee;
+}
+
+.tranches-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.tranche-item {
+  padding: 12px 0;
+  border-bottom: 1px solid #f1f3f9;
+}
+
+.tranche-item:last-child {
+  border-bottom: none;
+}
+
+.tranche-content {
+  display: flex;
+  align-items: center;
+}
+
+.tranche-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 12px;
+  flex-shrink: 0;
+}
+
+.tranche-icon.paid {
+  background: rgba(76, 201, 240, 0.15);
+  color: #4cc9f0;
+}
+
+.tranche-icon.unpaid {
+  background: rgba(247, 37, 133, 0.15);
+  color: #f72585;
+}
+
+.tranche-info {
+  flex-grow: 1;
+}
+
+.tranche-name {
+  font-weight: 600;
+  color: #2d3748;
+  margin-bottom: 4px;
+}
+
+.tranche-details {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.9rem;
+}
+
+.tranche-amount {
+  color: #4361ee;
+  font-weight: 600;
+}
+
+.tranche-date {
+  color: #e74c3c;
+  display: flex;
+  align-items: center;
+}
+
+.pay-date {
+  color: #198754;
+  display: flex;
+  align-items: center;
+}
+
+.tranche-status {
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.tranche-status.paid {
+  background: rgba(76, 201, 240, 0.15);
+  color: #4cc9f0;
+}
+
+.tranche-status.pending {
+  background: rgba(255, 184, 0, 0.15);
+  color: #ffb800;
+}
+
+.tranche-status.unpaid {
+  background: rgba(247, 37, 133, 0.15);
+  color: #f72585;
+}
+
+@media (max-width: 768px) {
+  .project-header {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .project-icon {
+    margin-right: 0;
+    margin-bottom: 10px;
+  }
+
+  .project-details {
+    justify-content: center;
+  }
+
+  .tranche-content {
+    flex-wrap: wrap;
+  }
+
+  .tranche-status {
+    margin-top: 10px;
+    width: 100%;
+    text-align: center;
+  }
+}
+.check_input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.check_input:checked + .badge {
+  background-color: #28a745 !important;
+  color: #fff !important;
+  box-shadow: 0 0 10px rgba(40, 167, 69, 0.6);
+}
+.check_label {
+  cursor: pointer;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+.check_label:hover {
+  transform: scale(1.05);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+.bg-label-success {
+  background-color: #28a745 !important;
+  color: #fff !important;
+}
+.datatables-projects tbody tr:hover {
+  cursor: pointer;
+}
+.details-content {
+  overflow: hidden;
+}
+tr.shown > td {
+  transition: background-color 0.25s ease;
+  background-color: #f8f9fa !important;
+}
+table.dataTable tbody tr.child td {
+  background: #fafafa;
+}
