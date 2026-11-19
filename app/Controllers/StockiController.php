@@ -32,6 +32,13 @@ class StockiController
     }
 
 
+    // Corps JSON (envoyé par la page) ou, à défaut, champs de formulaire
+    private function input(): array
+    {
+        $data = json_decode(file_get_contents('php://input'), true);
+        return is_array($data) ? $data : $_POST;
+    }
+
     public function getStockis()
     {
         try {
@@ -71,9 +78,9 @@ class StockiController
             $search = trim($_GET['term'] ?? '');
             $rows = $this->stockiService->getClientsForAutoComplete();
             if (!empty($search)) {
-                $rows = array_filter($rows, function ($item) use ($search) {
-                    return stripos($item['nom'], $search) !== false; 
-                });
+                $rows = array_values(array_filter($rows, function ($item) use ($search) {
+                    return stripos($item['nom'], $search) !== false;
+                }));
             }
             Response::success($rows, "Clients récupérés avec succès");
         } catch (DatabaseException | ValidationException $e) {
@@ -90,21 +97,24 @@ class StockiController
 
         try {
             Validator::validateMethod('POST');
-            $paymentType  = trim($_POST['paymentType'] ?? '');
-            $idclient = trim($_POST['idclient'] ?? '');
-            $montant = trim($_POST['montant'] ?? '');
-            $status  = trim($_POST['status'] ?? '');
+            $data = $this->input();
+            $paymentType  = trim($data['paymentType'] ?? '');
+            $idclient = trim($data['idclient'] ?? '');
+            $montant = trim($data['montant'] ?? '');
+            $status  = trim($data['status'] ?? '');
+            $startDate = trim($data['startDate'] ?? '') ?: date('Y-m-d');
             Validator::validateRequiredFields([
-                'id de client' => $idclient,
-                'montant d\'abonnement' => $montant,
-                'Type de paiement' => $paymentType,
-                'status d\'abonnement' => $status
+                'Client' => $idclient,
+                'Montant' => $montant,
+                "Type d'abonnement" => $paymentType,
+                'Statut' => $status
             ]);
             Validator::validateValidId($idclient);
             Validator::validatePositiveNumbers(['Montant' => $montant]);
             Validator::validateValueInEnum($paymentType, PaymentType::getValues());
             Validator::validateValueInEnum($status, PaymentStatus::getValues());
-            $this->stockiService->createStocki((int)$idclient, $paymentType,  (float)$montant,  $status);
+            Validator::validateDate($startDate, 'Date de début');
+            $this->stockiService->createStocki((int)$idclient, $paymentType,  (float)$montant,  $status, $startDate);
 
             Response::success(null, "Abonnement ajouté avec succès");
         } catch (DatabaseException | ValidationException $e) {
@@ -118,22 +128,26 @@ class StockiController
     public function updateStocki()
     {
         try {
-            Validator::validateMethod('POST');
-            $stockiId = trim($_POST['id'] ?? '');
-            $paymentType = trim($_POST['paymentType'] ?? '');
-            $montant = trim($_POST['montant'] ?? '');
-            $status  = trim($_POST['status'] ?? '');
+            Validator::validateMethod('PATCH');
+            $data = $this->input();
+            $stockiId = trim($data['id'] ?? '');
+            $paymentType = trim($data['paymentType'] ?? '');
+            $montant = trim($data['montant'] ?? '');
+            $status  = trim($data['status'] ?? '');
+            $startDate = trim($data['startDate'] ?? '');
             Validator::validateRequiredFields([
-                'Stocki id' => $stockiId,
-                'montant d\'abonnement' => $montant,
-                'Type de paiement' => $paymentType,
-                'status d\'abonnement' => $status
+                'ID abonnement' => $stockiId,
+                'Montant' => $montant,
+                "Type d'abonnement" => $paymentType,
+                'Date de début' => $startDate,
+                'Statut' => $status
             ]);
             Validator::validateValidId($stockiId);
             Validator::validatePositiveNumbers(['Montant' => $montant]);
             Validator::validateValueInEnum($paymentType, PaymentType::getValues());
             Validator::validateValueInEnum($status, PaymentStatus::getValues());
-            $this->stockiService->updateStocki((int)$stockiId, $paymentType, (float)$montant, $status);
+            Validator::validateDate($startDate, 'Date de début');
+            $this->stockiService->updateStocki((int)$stockiId, $paymentType, (float)$montant, $status, $startDate);
             Response::success(null, "Abonnement modifié avec succès");
         } catch (DatabaseException | ValidationException $e) {
             Response::failed(null, $e->getMessage());
@@ -146,19 +160,17 @@ class StockiController
     public function updateStockiStatus()
     {
         try {
-            Validator::validateMethod('POST');
-            $stockiId = trim($_POST['id'] ?? '');
-            $montant = trim($_POST['montant'] ?? '');
-            $status  = trim($_POST['status'] ?? '');
+            Validator::validateMethod('PATCH');
+            $data = $this->input();
+            $stockiId = trim($data['id'] ?? '');
+            $status  = trim($data['status'] ?? '');
             Validator::validateRequiredFields([
-                'id de stocki' => $stockiId,
-                'montant d\'abonnement' => $montant,
-                'status d\'abonnement' => $status
+                'ID abonnement' => $stockiId,
+                'Statut' => $status
             ]);
             Validator::validateValueInEnum($status, PaymentStatus::getValues());
             Validator::validateValidId($stockiId);
-            Validator::validatePositiveNumbers(['Montant' => $montant]);
-            $this->stockiService->updateStockiStatus((int)$stockiId, (float)$montant, $status);
+            $this->stockiService->updateStockiStatus((int)$stockiId, $status);
             Response::success(null, "Statut de l'abonnement mis à jour avec succès");
         } catch (DatabaseException | ValidationException $e) {
             Response::failed(null, $e->getMessage());
@@ -171,8 +183,8 @@ class StockiController
     public function deleteStocki()
     {
         try {
-            Validator::validateMethod('POST');
-            $stockiId = trim($_POST['abonnToDelete'] ?? '');
+            Validator::validateMethod('DELETE');
+            $stockiId = trim($this->input()['abonnToDelete'] ?? '');
             Validator::validateRequiredFields([
                 'id de stocki' => $stockiId
             ]);

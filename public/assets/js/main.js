@@ -748,13 +748,88 @@ function showTopNotification(message, type = "primary",icone = "check") {
   $notifMsg.text(message);
   $notifIco.attr("class", "ti ti-xs").addClass("ti-"+icone+" text-"+type);
 
+  // Annule le message précédent (animation + minuteur), sinon le nouveau reste invisible
+  clearTimeout(showTopNotification.timer);
   $notif
+    .stop(true, true)
     .removeClass("d-none alert-primary alert-success alert-danger")
     .addClass("alert-" + type)
     .css({ display: "flex", opacity: 0 })
-    .animate({ opacity: 1 }, 400)
-    .delay(3000)
-    .animate({ opacity: 0 }, 400, function () {
+    .animate({ opacity: 1 }, 400);
+  showTopNotification.timer = setTimeout(function () {
+    $notif.animate({ opacity: 0 }, 400, function () {
       $(this).css("display", "none").addClass("d-none");
     });
+  }, 3400);
 }
+
+// ==========================
+// Cloche de notifications : rappels de renouvellement et alertes de paiement
+// (mêmes données que le tableau de bord ; absent de la page de connexion, sans jQuery)
+// ==========================
+window.jQuery && $(function () {
+  const $list = $("#notifList");
+  if (!$list.length) return;
+  const esc = (v) =>
+    String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  const money = (v) =>
+    new Intl.NumberFormat("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(v) || 0) + " DT";
+  const days = (n) => `${n} jour${n > 1 ? "s" : ""}`;
+  const MAX = 15;
+
+  $.getJSON("api/dashboard").done((res) => {
+    if (!res.success) {
+      $list.html('<li class="list-group-item text-center text-muted">Notifications indisponibles</li>');
+      return;
+    }
+    const items = [];
+    res.data.renewals.forEach((r) =>
+      items.push({
+        rank: r.days >= 0 ? r.days : 1000 - r.days,
+        icon: "ti-refresh",
+        cls: r.days < 0 || r.days <= 7 ? "bg-label-danger" : r.days <= 14 ? "bg-label-warning" : "bg-label-info",
+        title: `Renouvellement : ${r.titre}`,
+        text: `${r.client} · ${r.days < 0 ? "dépassé de " + days(-r.days) : r.days === 0 ? "aujourd'hui" : "dans " + days(r.days)}`,
+        link: "p-projects",
+      }),
+    );
+    res.data.payments.forEach((p) =>
+      items.push({
+        rank: p.days >= 0 ? p.days : 500 - p.days,
+        icon: "ti-cash",
+        cls: p.level === "overdue" ? "bg-label-danger" : p.level === "due" ? "bg-label-warning" : "bg-label-info",
+        title: `${money(p.montant)} · ${p.client}`,
+        text: `${p.label} · ${p.level === "overdue" ? "en retard de " + days(-p.days) : p.level === "due" ? "à payer" : "dans " + days(p.days)}`,
+        link: p.link,
+      }),
+    );
+    items.sort((a, b) => a.rank - b.rank);
+
+    if (items.length) {
+      $("#notifBadge").text(items.length > 99 ? "99+" : items.length).removeClass("d-none");
+      $("#notifCount").text(items.length);
+    }
+    if (!items.length) {
+      $list.html('<li class="list-group-item text-center text-muted py-4">Aucune notification</li>');
+      return;
+    }
+    const html = items
+      .slice(0, MAX)
+      .map(
+        (n) => `<li class="list-group-item list-group-item-action dropdown-notifications-item">
+          <a href="${esc(n.link)}" class="d-flex text-body">
+            <div class="flex-shrink-0 me-3"><span class="avatar-initial rounded-circle ${n.cls} d-flex align-items-center justify-content-center" style="width:38px;height:38px"><i class="ti ${n.icon}"></i></span></div>
+            <div class="flex-grow-1">
+              <h6 class="mb-1">${esc(n.title)}</h6>
+              <small class="text-muted">${esc(n.text)}</small>
+            </div>
+          </a>
+        </li>`,
+      )
+      .join("");
+    const more = items.length > MAX
+      ? `<li class="list-group-item text-center text-muted small">… et ${items.length - MAX} autre${items.length - MAX > 1 ? "s" : ""}</li>`
+      : "";
+    $list.html(html + more);
+  }).fail(() => $list.html('<li class="list-group-item text-center text-muted">Notifications indisponibles</li>'));
+});

@@ -28,6 +28,14 @@ class Validator
         }
     }
 
+    // Règles d'un nouveau mot de passe : 8 caractères, une minuscule, un chiffre, symbole ou espace
+    public static function validateNewPassword(string $password): void
+    {
+        if (mb_strlen($password) < 8 || !preg_match('/\p{Ll}/u', $password) || !preg_match('/[^\p{L}]/u', $password)) {
+            throw ValidationException::invalidValue("Le mot de passe doit contenir au moins 8 caractères, dont une minuscule et un chiffre, un symbole ou un espace.");
+        }
+    }
+
     public static function validateRequiredFields(array $fields): void
     {
         foreach ($fields as $name => $field) {
@@ -42,8 +50,23 @@ class Validator
         foreach ($fields as $name => $field) {
             $value = trim((string) $field);
             if (!is_numeric($value) || (float)$value < 0) {
-                throw new \Exception("Le champ \"$name\" doit contenir un nombre supérieur ou égal à 0.");
+                throw ValidationException::invalidValue("Le champ \"$name\" doit contenir un nombre supérieur ou égal à 0.");
             }
+        }
+    }
+
+    public static function validateDate(string $date, string $name): void
+    {
+        $d = \DateTime::createFromFormat('!Y-m-d', $date);
+        if ($d === false || $d->format('Y-m-d') !== $date) {
+            throw ValidationException::invalidValue("Le champ \"$name\" doit être une date valide.");
+        }
+    }
+
+    public static function validateMaxLength(string $value, int $max, string $name): void
+    {
+        if (mb_strlen($value) > $max) {
+            throw ValidationException::invalidValue("Le champ \"$name\" ne doit pas dépasser $max caractères.");
         }
     }
 

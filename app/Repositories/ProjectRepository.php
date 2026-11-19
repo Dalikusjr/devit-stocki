@@ -7,6 +7,7 @@ use PDO;
 use App\Enums\ProjectStatus;
 use App\Enums\SubscriptionType;
 use App\Exceptions\DatabaseException;
+use App\Security\Crypto;
 
 class ProjectRepository
 {
@@ -90,7 +91,12 @@ class ProjectRepository
             ':statusp' => PaymentStatus::PAID,
             ':status' => ProjectStatus::ARCHIVED
         ]);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $projects = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($projects as &$project) {
+            $project['acces'] = Crypto::decrypt($project['acces']);
+        }
+        unset($project);
+        return $projects;
     }
 
     public function deleteProject(int $id): void
@@ -104,6 +110,28 @@ class ProjectRepository
         if ($stmt->rowCount() === 0) {
             throw DatabaseException::operationFailed("Le projet n'existe pas ou n'a pas pu être supprimé.");
         }
+    }
+
+    public function updateStatus(int $id, string $status): void
+    {
+        $stmt  = $this->connection->prepare(
+            "UPDATE " . self::TABLE . "
+                SET status=:status
+                WHERE idproj=:id"
+        );
+        $stmt->execute([':id' => $id, ':status' => $status]);
+    }
+
+    public function getProjectsByClient(int $idclient): array
+    {
+        $stmt = $this->connection->prepare(
+            "SELECT idproj, titre, couttot, status
+            FROM " . self::TABLE . "
+            WHERE idclient=:idclient
+            ORDER BY idproj"
+        );
+        $stmt->execute([':idclient' => $idclient]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     public function archiveProject(int $id): void
@@ -133,7 +161,7 @@ class ProjectRepository
             ':datedebut' => $datedebut,
             ':daterenouv' => $daterenouv,
             ':couttot' => $couttot,
-            ':acces' => $acces
+            ':acces' => Crypto::encrypt($acces)
         ]);
     }
 
@@ -151,7 +179,7 @@ class ProjectRepository
             ':datedebut' => $datedebut,
             ':daterenouv' => $daterenouv,
             ':couttot' => $couttot,
-            ':acces' => $acces,
+            ':acces' => Crypto::encrypt($acces),
             ':idclient' => $idclient,
             ':status' => $status
         ]);

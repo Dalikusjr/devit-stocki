@@ -5,6 +5,7 @@ namespace App\Controllers;
 use App\Config\Database;
 use App\Exceptions\DatabaseException;
 use App\Exceptions\ValidationException;
+use App\Helpers\Helpers;
 use App\Helpers\Response;
 use App\Validators\Validator;
 use App\Logging\Logger;
@@ -29,7 +30,15 @@ class ProjectController
         try {
             Validator::validateMethod('GET');
 
-            Response::success($this->projectService->getProjects(), 'Projets récupérés avec succès');
+            $projects = $this->projectService->getProjects();
+            // les accès (identifiants, mots de passe) ne sont envoyés qu'aux administrateurs
+            if (!Helpers::isAdmin()) {
+                foreach ($projects as &$project) {
+                    $project['acces'] = null;
+                }
+                unset($project);
+            }
+            Response::success($projects, 'Projets récupérés avec succès');
         } catch (DatabaseException | ValidationException $e) {
             Response::failed(null, $e->getMessage());
         } catch (\Throwable $e) {
@@ -53,7 +62,7 @@ class ProjectController
             $couttot = trim($data['couttot'] ?? '');  // Required
             $avancepaye = trim($data['avancepaye'] ?? '');
             $comment = trim($data['comment'] ?? '');
-            $acces = trim($data['acces'] ?? '');
+            $acces = Helpers::isAdmin() ? trim($data['acces'] ?? '') : '';
             $nbrEcheance = trim($data['nbrEch'] ?? ''); //Required
             Validator::validateRequiredFields([
                 'Titre' => $titre,
@@ -67,14 +76,18 @@ class ProjectController
                 'Nombre d\'echeances' => $nbrEcheance
             ]);
             Validator::validateEmail($email);
+            Validator::validateMaxLength($titre, 40, 'Titre');
+            Validator::validateDate($datedebut, 'Date de début');
+            Validator::validateDate($daterenouv, 'Date de renouvellement');
             Validator::validatePositiveNumbers([
                 'Coût total' => $couttot
             ]);
-            if ($avancepaye > 0) {
+            if ($avancepaye !== '') {
                 Validator::validatePositiveNumbers([
-                    'Avance a payer' => $avancepaye
+                    'Avance payée' => $avancepaye
                 ]);
             }
+            Validator::validatePositiveNumbers(["Nombre d'échéances" => $nbrEcheance]);
             Validator::validateValidId($nbrEcheance);
             $this->projectService->createProject(
                 $email,
@@ -141,7 +154,7 @@ class ProjectController
     public function updateProject()
     {
         try {
-            Validator::validateMethod('PaTCH');
+            Validator::validateMethod('PATCH');
             $input = file_get_contents('php://input');
             $data = json_decode($input, true);
             $idproj = trim($data['idproj'] ?? '');
@@ -149,7 +162,7 @@ class ProjectController
             $datedebut = trim($data['datedebut'] ?? '');
             $daterenouv = trim($data['daterenouv'] ?? '');
             $couttot = trim($data['couttot'] ?? '');
-            $acces = trim($data['acces'] ?? '');
+            $acces = Helpers::isAdmin() ? trim($data['acces'] ?? '') : null;
             $nbrEcheance = trim($data['nbrEch'] ?? '');
             Validator::validateRequiredFields([
                 'ID de projet' => $idproj,
@@ -159,8 +172,12 @@ class ProjectController
                 'Coût total' => $couttot,
                 'Nombre d\'echeances' => $nbrEcheance
             ]);
+            Validator::validateMaxLength($titre, 40, 'Titre');
+            Validator::validateDate($datedebut, 'Date de début');
+            Validator::validateDate($daterenouv, 'Date de renouvellement');
             Validator::validatePositiveNumbers([
-                'Coût total' => $couttot
+                'Coût total' => $couttot,
+                "Nombre d'échéances" => $nbrEcheance
             ]);
             Validator::validateValidId($idproj);
             Validator::validateValidId($nbrEcheance);

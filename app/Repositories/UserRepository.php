@@ -71,7 +71,7 @@ class UserRepository
     {
         $stmt = $this->connection->query(
             "
-            SELECT * 
+            SELECT iduser, email, nom, prenom, role, tel, is_admin 
             FROM  " . self::TABLE
         );
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -90,7 +90,12 @@ class UserRepository
         }
     }
 
-    public function updateUser(int $id, string $email, string $nom, string $prenom, string $tel, string $role): void
+    public function countAdmins(): int
+    {
+        return (int) $this->connection->query("SELECT COUNT(*) FROM " . self::TABLE . " WHERE is_admin=1")->fetchColumn();
+    }
+
+    public function updateUser(int $id, string $email, string $nom, string $prenom, string $tel, string $role, bool $isAdmin): void
     {
         $stmt  = $this->connection->prepare(
             "UPDATE  " . self::TABLE . "
@@ -98,7 +103,8 @@ class UserRepository
                 nom=:nom,
                 prenom=:prenom,
                 tel=:tel,
-                role=:role
+                role=:role,
+                is_admin=:is_admin
                 WHERE iduser=:id"
         );
         $stmt->execute([
@@ -107,11 +113,9 @@ class UserRepository
             ':nom' => $nom,
             ':prenom' => $prenom,
             ':tel' => $tel,
-            ':role' => $role
+            ':role' => $role,
+            ':is_admin' => (int) $isAdmin
         ]);
-        if ($stmt->rowCount() === 0) {
-            throw DatabaseException::operationFailed("L'utilisateur n'existe pas ou n'a pas pu être modifié.");
-        }
     }
 
     public function updatePassword(int $id, string $password): void
@@ -130,13 +134,13 @@ class UserRepository
         }
     }
 
-    public function addUser(string $email, string $password, string $nom, string $prenom, string $tel, string $role): int
+    public function addUser(string $email, string $password, string $nom, string $prenom, string $tel, string $role, bool $isAdmin): int
     {
 
         $stmt = $this->connection->prepare(
             "INSERT INTO " . self::TABLE . " 
-            (email,password,nom,prenom,tel,role) 
-            VALUES (:email,:password,:nom,:prenom,:tel,:role)"
+            (email,password,nom,prenom,tel,role,is_admin) 
+            VALUES (:email,:password,:nom,:prenom,:tel,:role,:is_admin)"
         );
 
         $stmt->execute([
@@ -145,7 +149,8 @@ class UserRepository
             ':nom' => $nom,
             ':prenom' => $prenom,
             ':tel' => $tel,
-            ':role' => $role
+            ':role' => $role,
+            ':is_admin' => (int) $isAdmin
         ]);
         $id = (int) $this->connection->lastInsertId();
         if ($id <= 0) {

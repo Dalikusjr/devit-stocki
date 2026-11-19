@@ -9,6 +9,125 @@ let table;
 let editingRow = null;
 let rowToDelete = null;
 
+// Échappe les données avant insertion dans le HTML
+function escapeHtml(value) {
+  return String(value ?? "").replace(
+    /[&<>"']/g,
+    (c) =>
+      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[
+        c
+      ],
+  );
+}
+
+// ===============================
+// Rôles proposés, par catégorie (on peut aussi saisir un rôle libre, 40 caractères max)
+// La couleur du badge suit la catégorie.
+// ===============================
+const ROLE_GROUPS = [
+  { label: "Direction", badge: "bg-label-primary", roles: [
+    "Gérant", "Manager", "Directeur IT", "Directeur commercial", "Directeur administratif et financier",
+  ] },
+  { label: "Gestion de projet", badge: "bg-label-info", roles: [
+    "Chef de projet IT", "Product Owner", "Scrum Master", "Business Analyst",
+  ] },
+  { label: "Développement", badge: "bg-label-success", roles: [
+    "Développeur Full-Stack", "Développeur Frontend", "Développeur Backend", "Développeur Mobile",
+    "Développeur PHP", "Développeur Java", "Développeur Python", "Développeur .NET",
+    "Développeur DevOps", "Architecte logiciel", "Stagiaire développeur",
+  ] },
+  { label: "Design", badge: "bg-label-warning", roles: [
+    "UI/UX Designer", "Web Designer", "Graphiste", "Motion Designer",
+  ] },
+  { label: "Qualité et tests", badge: "bg-label-dark", roles: [
+    "QA Engineer", "Testeur logiciel", "Ingénieur automatisation de tests",
+  ] },
+  { label: "Infrastructure et données", badge: "bg-label-secondary", roles: [
+    "Administrateur systèmes et réseaux", "Administrateur base de données", "Ingénieur cloud",
+    "Ingénieur sécurité informatique", "Data Analyst", "Data Engineer",
+  ] },
+  { label: "Stocki et relation client", badge: "bg-label-danger", roles: [
+    "Commercial", "Chargé de clientèle", "Support client Stocki", "Formateur Stocki",
+    "Technicien support informatique", "Consultant ERP", "Consultant CRM",
+  ] },
+  { label: "Administration et finance", badge: "bg-label-facebook", roles: [
+    "Comptable", "Responsable administratif", "Assistant administratif", "Ressources humaines",
+  ] },
+];
+const OTHER_ROLES_LABEL = "Autres rôles utilisés";
+
+// Comparaison sans accents ni majuscules : « developpeur » trouve « Développeur »
+function normalizeRole(value) {
+  return String(value ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+function roleBadgeClass(role) {
+  const key = normalizeRole(role);
+  const group = ROLE_GROUPS.find((g) => g.roles.some((r) => normalizeRole(r) === key));
+  return group ? group.badge : "bg-label-secondary";
+}
+
+// Liste déroulante groupée (select2) : rôles du catalogue + rôles déjà attribués, saisie libre possible
+function buildRoleOptions(usedRoles) {
+  const known = new Set(ROLE_GROUPS.flatMap((g) => g.roles.map(normalizeRole)));
+  const others = [...new Set(usedRoles.filter((r) => r && !known.has(normalizeRole(r))))].sort((a, b) =>
+    a.localeCompare(b, "fr"),
+  );
+  const groups = others.length ? [...ROLE_GROUPS, { label: OTHER_ROLES_LABEL, roles: others }] : ROLE_GROUPS;
+  return groups.map((g) => ({ text: g.label, children: g.roles.map((r) => ({ id: r, text: r })) }));
+}
+function initRoleSelect(usedRoles) {
+  const $role = $("#role");
+  const current = $role.val();
+  if ($role.hasClass("select2-hidden-accessible")) $role.select2("destroy");
+  $role.empty().append(new Option("", "", false, false));
+  $role.select2({
+    data: buildRoleOptions(usedRoles),
+    placeholder: "Choisir ou saisir un rôle",
+    allowClear: true,
+    tags: true, // rôle libre
+    width: "100%",
+    dropdownParent: $("#add-new-record"),
+    language: {
+      noResults: () => "Aucun rôle trouvé",
+      searching: () => "Recherche…",
+    },
+    // recherche insensible aux accents, dans le rôle et dans le nom de la catégorie
+    matcher: (params, data) => {
+      const term = normalizeRole(params.term);
+      if (!term) return data;
+      if (data.children) {
+        const groupMatch = normalizeRole(data.text).includes(term);
+        const children = groupMatch ? data.children : data.children.filter((c) => normalizeRole(c.text).includes(term));
+        return children.length ? $.extend({}, data, { children }) : null;
+      }
+      return normalizeRole(data.text).includes(term) ? data : null;
+    },
+    // rôle libre : 40 caractères maximum, et pas de doublon d'un rôle existant (accents/majuscules)
+    createTag: (params) => {
+      const term = String(params.term ?? "").trim().replace(/\s+/g, " ");
+      if (!term || term.length > 40) return null;
+      const exists = $role.find("option").toArray().some((o) => normalizeRole(o.value) === normalizeRole(term));
+      return exists ? null : { id: term, text: term, newTag: true };
+    },
+    // « Ajouter « … » » en dernier : Entrée choisit d'abord un rôle existant correspondant
+    insertTag: (data, tag) => data.push(tag),
+    templateResult: (data) =>
+      data.newTag ? $("<span>").append($("<i class='ti ti-plus me-1'>"), document.createTextNode(`Ajouter « ${data.text} »`)) : data.text,
+  });
+  if (current) setRoleValue(current);
+}
+function setRoleValue(role) {
+  const $role = $("#role");
+  if (role && !$role.find("option").toArray().some((o) => o.value === role)) {
+    $role.append(new Option(role, role, false, false));
+  }
+  $role.val(role || null).trigger("change.select2"); // affichage seulement
+}
+
 // ===============================
 // DOMContentLoaded : Initialisation du formulaire et OffCanvas
 // ===============================
@@ -17,112 +136,26 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Gestion du bouton "Créer un nouveau record"
   setTimeout(() => {
-    const newRecord = document.querySelector(".create-new");
     const offCanvasElement = document.querySelector("#add-new-record");
-    var substringMatcher = function (strs) {
-      return function findMatches(q, cb) {
-        var matches, substrRegex;
-        matches = [];
-        substrRegex = new RegExp(q, "i");
-        $.each(strs, function (i, str) {
-          if (substrRegex.test(str)) {
-            matches.push(str);
-          }
-        });
-
-        cb(matches);
-      };
-    };
-    var itJobs = [
-      // Management
-      "Manager",
-      "Directeur IT",
-      // Développement
-      "Développeur Frontend",
-      "Développeur Backend",
-      "Développeur Full-Stack",
-      "Développeur Mobile",
-      "Développeur Web",
-      "Développeur Python",
-      "Développeur Java",
-      "Développeur PHP",
-      "Développeur .NET",
-      "Développeur C++",
-      "Développeur Cloud",
-      "Développeur DevOps",
-
-      // Design / UI / UX
-      "UI Designer",
-      "UX Designer",
-      "Web Designer",
-      "Product Designer",
-      "Graphiste digital",
-      "Motion Designer",
-
-      // Test & Contrôle qualité
-      "QA Engineer",
-      "Testeur logiciel",
-      "Ingénieur automatisation de tests",
-      "Analyste qualité",
-      "Contrôleur qualité logiciel",
-
-      // Gestion & Pilotage
-      "Chef de projet IT",
-      "Scrum Master",
-      "Product Owner",
-      "Business Analyst",
-      "IT Project Manager",
-
-      // Données & Systèmes
-      "Data Scientist",
-      "Data Analyst",
-      "Data Engineer",
-      "Administrateur Base de données",
-      "Administrateur Systèmes & Réseaux",
-      "Ingénieur Sécurité Informatique",
-      "Architecte Logiciel",
-      "Architecte Cloud",
-
-      // Support & autres
-      "Technicien support informatique",
-      "Consultant ERP",
-      "Consultant CRM",
-      "Formateur IT",
-    ];
-    if (isRtl) {
-      $(".typeahead").attr("dir", "rtl");
-    }
-
-    // Basic
-    // --------------------------------------------------------------------
-    $(".typeahead").typeahead(
-      {
-        hint: !isRtl,
-        highlight: true,
-        minLength: 1,
-      },
-      {
-        name: "itJobs",
-        source: substringMatcher(itJobs),
-      },
-    );
-    $(".typeahead").on(
-      "typeahead:select typeahead:autocomplete",
-      function (e, suggestion) {
-        $(this).val(suggestion); // met à jour la valeur native lue par FormValidation
-        fv.revalidateField("role"); // force la revalidation du champ
-      },
-    );
-    if (newRecord) {
-      newRecord.addEventListener("click", function () {
+    // liste des rôles prête dès l'ouverture, complétée quand le tableau est chargé
+    initRoleSelect([]);
+    // validation seulement sur un choix de l'utilisateur (pas lors d'une remise à zéro)
+    $("#role").on("select2:select select2:clear", function () {
+      if (fv) fv.revalidateField("role");
+    });
+    // Délégation : le bouton est créé par DataTables, parfois après ce délai
+    {
+      $(document).on("click", ".create-new", function () {
         editingRow = null;
+        // repartir d'un formulaire vide (une modification a pu être abandonnée)
+        fv.resetForm(true);
+        setRoleValue("");
+        offCanvasElement.querySelector(".dt-mDp").placeholder = "*********";
         offCanvasEl = new bootstrap.Offcanvas(offCanvasElement);
         // Titre du formulaire
         offCanvasElement.querySelector("#titre").innerHTML =
           "Nouveau utilisateur";
 
-        // Réinitialiser les champs
-        // $(".typeahead").typeahead("val", "");
         fv.enableValidator("mDp", "notEmpty");
         offCanvasEl.show();
       });
@@ -156,12 +189,12 @@ document.addEventListener("DOMContentLoaded", function () {
       },
       role: {
         validators: {
-          notEmpty: { message: "Le Rôle est requis" },
+          notEmpty: { message: "Le rôle est requis" },
         },
       },
       email: {
         validators: {
-          notEmpty: { message: "L'E-mail' est requis" },
+          notEmpty: { message: "L'E-mail est requis" },
           emailAddress: {
             message: "L'adresse e-mail n'est pas valide",
           },
@@ -170,9 +203,14 @@ document.addEventListener("DOMContentLoaded", function () {
       mDp: {
         validators: {
           notEmpty: { message: "Le mot de passe est requis" },
-          stringLength: {
-            min: 6,
-            message: "Le mot de passe doit contenir au moins 6 caractères",
+          callback: {
+            message:
+              "8 caractères minimum, dont une minuscule et un chiffre, un symbole ou un espace",
+            callback: (input) =>
+              input.value === "" ||
+              (input.value.length >= 8 &&
+                /\p{Ll}/u.test(input.value) &&
+                /[^\p{L}]/u.test(input.value)),
           },
         },
       },
@@ -245,30 +283,34 @@ $(document).ready(function () {
         targets: 2,
         orderable: true,
         responsivePriority: 3,
-        render: (data) => `<span class="fw-bold">${data}</span>`,
+        render: (data) => `<span class="fw-bold">${escapeHtml(data)}</span>`,
       },
       {
         targets: 3,
         responsivePriority: 2,
+        render: (data) => escapeHtml(data),
       },
       {
         targets: 4,
         responsivePriority: 5,
+        render: (data) => escapeHtml(data),
       },
       {
         targets: 5,
         render: (data) =>
-          `<span><i class="ti ti-phone me-2"></i>${data}</span>`,
+          `<span><i class="ti ti-phone me-2"></i>${escapeHtml(data)}</span>`,
         responsivePriority: 6,
       },
       {
         targets: 6,
         className: "text-center",
         responsivePriority: 6,
-        render: (data) =>
-          `<strong class="badge ${
-            data == "Manager" ? "bg-label-facebook" : "bg-label-success"
-          }">${data}</strong>`,
+        render: (data, type, row) =>
+          `<strong class="badge ${roleBadgeClass(data)}">${escapeHtml(data)}</strong>${
+            Number(row.is_admin)
+              ? '<span class="badge bg-label-primary ms-1"><i class="ti ti-shield-check me-1"></i>Admin</span>'
+              : ""
+          }`,
       },
       {
         targets: -1,
@@ -294,7 +336,7 @@ $(document).ready(function () {
         text: '<i class="ti ti-printer me-sm-1"></i> <span class="d-none d-sm-inline-block">Imprimer</span>',
         className: "btn btn-default",
         exportOptions: {
-          columns: [1, 2, 3, 4, 5],
+          columns: [1, 2, 3, 4, 5, 6],
         },
       },
       {
@@ -303,7 +345,7 @@ $(document).ready(function () {
         text: '<i class="ti ti-file-type-pdf me-sm-1"></i> <span class="d-none d-sm-inline-block">Exporter en PDF</span>',
         className: "btn btn-default",
         exportOptions: {
-          columns: [1, 2, 3, 4, 5],
+          columns: [1, 2, 3, 4, 5, 6],
         },
       },
       {
@@ -319,7 +361,8 @@ $(document).ready(function () {
     responsive: {
       details: {
         display: $.fn.dataTable.Responsive.display.modal({
-          header: (row) => row.data()["nom"] + " " + row.data()["prenom"],
+          header: (row) =>
+            escapeHtml(row.data()["nom"] + " " + row.data()["prenom"]),
           focus: true,
         }),
         type: "column",
@@ -379,6 +422,11 @@ $(document).ready(function () {
     },
   });
 
+  // les rôles déjà attribués complètent la liste (à chaque rechargement du tableau)
+  table.on("xhr.dt", function (e, settings, json) {
+    if (json && Array.isArray(json.data)) initRoleSelect(json.data.map((u) => u.role));
+  });
+
   // ===============================
   // Événements de modification
   // ===============================
@@ -392,12 +440,13 @@ $(document).ready(function () {
       "Modifier l'utilisateur";
     offCanvasElement.querySelector(".dt-userLName").value = data.nom;
     offCanvasElement.querySelector(".dt-userFName").value = data.prenom;
-    $(".typeahead").typeahead("val", data.role);
+    setRoleValue(data.role);
     offCanvasElement.querySelector(".dt-tel").value = data.tel;
     offCanvasElement.querySelector(".dt-email").value = data.email;
     offCanvasElement.querySelector(".dt-mDp").value = "";
     offCanvasElement.querySelector(".dt-mDp").placeholder =
       "Laisser vide pour ne pas modifier";
+    offCanvasElement.querySelector(".dt-isAdmin").checked = Number(data.is_admin) === 1;
     fv.disableValidator("mDp", "notEmpty");
 
     offCanvasEl.show();
@@ -415,6 +464,7 @@ $(document).ready(function () {
       tel: $("#tel").val(),
       email: $("#email").val(),
       password: $("#mDp").val(),
+      is_admin: $("#isAdmin").is(":checked"),
     };
     let lnk = editingRow ? "api/user/update" : "api/user/create";
     let method = editingRow ? "PATCH" : "POST";
@@ -449,7 +499,8 @@ $(document).ready(function () {
   let userToDelete;
   $(".datatables-users tbody").on("click", ".delete-record", function () {
     userToDelete = table.row($(this).closest("tr")).data().iduser;
-    $(".modal-body").text(
+    $("#confirmDeleteModal .modal-title").text("Confirmer la suppression");
+    $("#confirmDeleteModal .modal-body").text(
       "Êtes-vous sûr de vouloir supprimer cet utilisateur ?",
     );
     deleteModal.show();

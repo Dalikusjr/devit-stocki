@@ -1,5 +1,16 @@
 "use strict";
 let table;
+// Échappe les données avant insertion dans le HTML
+function escapeHtml(value) {
+  return String(value ?? "").replace(
+    /[&<>"']/g,
+    (c) =>
+      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[
+        c
+      ],
+  );
+}
+
 // ===============================
 // Initialisation DataTable
 // ===============================
@@ -10,7 +21,7 @@ $(document).ready(function () {
       url: "https://cdn.datatables.net/plug-ins/1.13.6/i18n/fr-FR.json",
     },
     ajax: {
-      url: "paiments/getAll.php",
+      url: "api/payment/clients",
       dataSrc: "data",
     },
     columns: [
@@ -45,17 +56,18 @@ $(document).ready(function () {
         orderable: true,
         responsivePriority: 1,
         render: (data, type, row) =>
-          `<span class="fw-bold">${data}</span>`,
+          `<span class="fw-bold">${escapeHtml(data)}</span>`,
       },
       {
         targets: 3,
         responsivePriority: 4,
+        render: (data) => escapeHtml(data),
       },
       {
         targets: 4,
         responsivePriority: 5,
         render: (data) =>
-          `<span><i class="ti ti-phone me-2"></i>${data}</span>`,
+          `<span><i class="ti ti-phone me-2"></i>${escapeHtml(data)}</span>`,
       },
       { targets: 5, responsivePriority: 2, className: "text-center" },
     ],
@@ -87,7 +99,7 @@ $(document).ready(function () {
     responsive: {
       details: {
         display: $.fn.dataTable.Responsive.display.modal({
-          header: (row) => row.data()["projectTitle"],
+          header: (row) => escapeHtml(row.data()["nom"]),
         }),
         type: "column",
         renderer: (api, rowIdx, columns) => {
@@ -122,8 +134,10 @@ $(document).ready(function () {
       `);
     },
   });
-  $(".datatables-paiments tbody").on("click", "tr", function () {
-    let id = table.row($(this).closest("tr")).data().idclient; // récupérer la ligne
-    window.location.href = 'dashboard.php?page=listeprojects&id=' + id;
+  $(".datatables-paiments tbody").on("click", "tr", function (e) {
+    if ($(e.target).closest("td.control").length) return;
+    const data = table.row($(this).closest("tr")).data(); // récupérer la ligne
+    if (!data) return;
+    window.location.href = "p-listeprojects?id=" + data.idclient;
   });
 });

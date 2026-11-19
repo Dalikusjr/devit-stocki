@@ -149,47 +149,11 @@ class PaymentRepository
             "SELECT * 
             FROM " . self::TABLE . " 
             WHERE parent_id = :parent_id 
-            AND parent_type = :parent_type"
+            AND parent_type = :parent_type
+            ORDER BY dateech, idpay"
         );
         $stmt->execute([':parent_id' => $parent_id, ':parent_type' => $parent_type]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
-
-    public function getProjectsByClient(int $idclient): array
-    {
-        $stmt = $this->connection->prepare("SELECT 
-            pr.idproj, 
-            pr.titre, 
-            pr.couttot,
-            calculerResteProjet(pr.idproj) AS restepaye,
-            countProjectPaidInstallments(pr.idproj) AS tranches_paye,
-            countProjectInstallments(pr.idproj) AS tranches_total,
-            -- Agrégation JSON isolée pour éviter l'erreur 1064
-            COALESCE(
-                    (SELECT JSON_ARRAYAGG(
-                        JSON_OBJECT(
-                            'idpay', p.idpay,
-                            'commentaire', p.commentaire,
-                            'echeance', p.echeance,
-                            'dateech', p.dateech,
-                            'status', p.status,
-                            'datepay', p.datepay 
-                        )
-                    ) FROM payments p WHERE p.idproj = pr.idproj),
-                    JSON_ARRAY()
-                ) AS tranches
-
-        FROM projects pr
-        WHERE pr.idclient = :idclient
-        GROUP BY pr.idproj");
-
-        $stmt->execute(['idclient' => $idclient]);
-        $projets = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        foreach ($projets as &$projet) {
-            $projet['tranches'] = json_decode($projet['tranches'] ?? '[]', true);
-        }
-        unset($projet);
-        return $projets;
     }
 
     public function getInstallments(): array
@@ -229,7 +193,7 @@ class PaymentRepository
         }
     }
 
-    public function updateInstallment(int $idpay, float $montant, string $comment, string $dateech, string $status, string $datepay): void
+    public function updateInstallment(int $idpay, float $montant, string $comment, string $dateech, string $status, ?string $datepay): void
     {
         $stmt  = $this->connection->prepare(
             "UPDATE  " . self::TABLE . "  
@@ -248,12 +212,9 @@ class PaymentRepository
             ':datepay' => $datepay,
             ':idpay' => $idpay
         ]);
-        if ($stmt->rowCount() === 0) {
-            throw DatabaseException::operationFailed("L'échéance n'existe pas ou n'a pas pu être modifié.");
-        }
     }
 
-    public function updateInstallmentStatus(int $idpay, string $status, string $datepay): bool
+    public function updateInstallmentStatus(int $idpay, string $status, ?string $datepay): bool
     {
         $stmt  = $this->connection->prepare(
             "UPDATE  " . self::TABLE . "  

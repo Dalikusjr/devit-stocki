@@ -2,7 +2,7 @@
               <div class="card">
                 <div class="card-body d-flex gap-2">
                   <a
-                    href="dashboard.php?page=paiments"
+                    href="p-paiments"
                     class="btn  btn-primary d-inline-flex align-items-center px-3 py-1 fw-bold text-white">
                     <i
                       class="ti ti-arrow-narrow-left me-sm-2"

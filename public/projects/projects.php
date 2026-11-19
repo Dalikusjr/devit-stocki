@@ -36,7 +36,7 @@
                       <label class="form-label" for="projectTitle">Titre de projet</label>
                       <div class="input-group input-group-merge">
                         <span class="input-group-text"><i class="ti ti-prompt"></i></span>
-                        <input type="text" id="projectTitle" class="form-control dt-projectTitle" name="projectTitle" placeholder="App Angular" />
+                        <input type="text" id="projectTitle" class="form-control dt-projectTitle" name="projectTitle" placeholder="App Angular" maxlength="40" />
                       </div>
                     </div>
 
@@ -125,7 +125,7 @@
                       </div>
                     </div>
 
-                    <div class="col-sm-12 col-md-12"> <label class="form-label" for="acces">Accès</label>
+                    <div class="col-sm-12 col-md-12 div-acces"> <label class="form-label" for="acces">Accès</label>
                       <div class="input-group input-group-merge">
                         <span class="input-group-text"><i class="ti ti-key"></i></span> <textarea
                           id="acces"

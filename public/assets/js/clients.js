@@ -9,6 +9,17 @@ let table;
 let editingRow = null;
 let clientToDelete = null;
 
+// Échappe les données avant insertion dans le HTML
+function escapeHtml(value) {
+  return String(value ?? "").replace(
+    /[&<>"']/g,
+    (c) =>
+      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[
+        c
+      ],
+  );
+}
+
 // ===============================
 // DOMContentLoaded : Initialisation du formulaire et OffCanvas
 // ===============================
@@ -17,11 +28,13 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Gestion du bouton "Créer un nouveau record"
   setTimeout(() => {
-    const newRecord = document.querySelector(".create-new");
     const offCanvasElement = document.querySelector("#add-new-record");
-    if (newRecord) {
-      newRecord.addEventListener("click", function () {
+    // Délégation : le bouton est créé par DataTables, parfois après ce délai
+    {
+      $(document).on("click", ".create-new", function () {
         editingRow = null;
+        // repartir d'un formulaire vide (une modification a pu être abandonnée)
+        fv.resetForm(true);
         offCanvasEl = new bootstrap.Offcanvas(offCanvasElement);
         // Titre du formulaire
         offCanvasElement.querySelector("#titre").innerHTML = "Nouveau client";
@@ -131,23 +144,24 @@ $(document).ready(function () {
         targets: 2,
         orderable: true,
         responsivePriority: 2,
-        render: (data) => `<span class="fw-bold">${data}</span>`,
+        render: (data) => `<span class="fw-bold">${escapeHtml(data)}</span>`,
       },
       {
         targets: 3,
         responsivePriority: 2,
+        render: (data) => escapeHtml(data),
       },
       {
         targets: 4,
         responsivePriority: 6,
         render: (data) =>
-          `<span><i class="ti ti-phone me-2"></i>${data}</span>`,
+          `<span><i class="ti ti-phone me-2"></i>${escapeHtml(data)}</span>`,
       },
       {
         targets: 5,
         responsivePriority: 6,
         render: (data) =>
-          `<span><i class="ti ti-map-pin me-2"></i>${data}</span>`,
+          `<span><i class="ti ti-map-pin me-2"></i>${escapeHtml(data)}</span>`,
       },
       {
         targets: -1,
@@ -161,6 +175,7 @@ $(document).ready(function () {
           '<a class="pe-1 dropdown-toggle hide-arrow text-primary" data-bs-toggle="dropdown">' +
           '<i class="ti ti-dots"></i></a>' +
           '<div class="dropdown-menu dropdown-menu-end">' +
+          '<a href="javascript:;" class="dropdown-item view-history"><i class="ti ti-history me-1"></i> Historique</a>' +
           '<a href="javascript:;" class="dropdown-item edit-record"><i class="ti ti-pencil me-1"></i> Modifier</a>' +
           '<a href="javascript:;" class="dropdown-item delete-record"><i class="ti ti-trash me-1"></i> Supprimer</a>' +
           "</div></div>",
@@ -198,7 +213,7 @@ $(document).ready(function () {
     responsive: {
       details: {
         display: $.fn.dataTable.Responsive.display.modal({
-          header: (row) => row.data()["nom"] + " " + row.data()["prenom"],
+          header: (row) => escapeHtml(row.data()["nom"]),
           focus: true,
         }),
         type: "column",
@@ -256,6 +271,60 @@ $(document).ready(function () {
         </style>
       `);
     },
+  });
+
+  // ===============================
+  // Historique complet du client (projets, maintenance, Stocki, licences)
+  // ===============================
+  const HIST_TYPES = {
+    project: '<span class="badge bg-label-primary"><i class="ti ti-code me-1"></i>Projet</span>',
+    maintain: '<span class="badge bg-label-info"><i class="ti ti-tool me-1"></i>Maintenance</span>',
+    stocki: '<span class="badge bg-label-warning"><i class="ti ti-package me-1"></i>Stocki</span>',
+    stocki_premium: '<span class="badge bg-label-secondary"><i class="ti ti-star me-1"></i>Licence</span>',
+    licence: '<span class="badge bg-label-secondary"><i class="ti ti-star me-1"></i>Licence</span>',
+  };
+  const histMoney = (v) =>
+    new Intl.NumberFormat("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(v) || 0) + " DT";
+  const histRows = (rows, empty) =>
+    rows.length
+      ? rows
+          .map(
+            (r) => `<tr>
+              <td class="text-nowrap">${escapeHtml(r.d)}</td>
+              <td>${HIST_TYPES[r.kind] || escapeHtml(r.kind)}</td>
+              <td>${escapeHtml(r.objet)}</td>
+              <td class="text-end text-nowrap">${histMoney(r.montant)}</td>
+            </tr>`,
+          )
+          .join("")
+      : `<tr><td colspan="4" class="text-center text-muted py-3">${empty}</td></tr>`;
+  const historyModal = new bootstrap.Modal(document.getElementById("clientHistoryModal"));
+
+  $(".datatables-clients tbody").on("click", ".view-history", function () {
+    const client = table.row($(this).closest("tr")).data();
+    $("#clientHistoryTitle").text("Historique — " + client.nom);
+    $("#histTotalReceived, #histTotalUnpaid").text("…");
+    $("#histUnpaid tbody, #histReceived tbody").html(
+      '<tr><td colspan="4" class="text-center text-muted py-3">Chargement…</td></tr>',
+    );
+    historyModal.show();
+    $.getJSON("api/client/history", { id: client.idclient })
+      .done((res) => {
+        if (!res.success) {
+          historyModal.hide();
+          showTopNotification(res.message, "danger", "ban");
+          return;
+        }
+        const d = res.data;
+        $("#histTotalReceived").text(histMoney(d.totalReceived));
+        $("#histTotalUnpaid").text(histMoney(d.totalUnpaid));
+        $("#histUnpaid tbody").html(histRows(d.unpaid, "Aucun impayé"));
+        $("#histReceived tbody").html(histRows(d.received, "Aucun paiement reçu"));
+      })
+      .fail(() => {
+        historyModal.hide();
+        showTopNotification("Erreur lors de Traitement", "danger", "ban");
+      });
   });
 
   // ===============================
@@ -318,7 +387,10 @@ $(document).ready(function () {
   const deleteModal = new bootstrap.Modal(deleteModalEl);
   $(".datatables-clients tbody").on("click", ".delete-record", function () {
     clientToDelete = table.row($(this).closest("tr")).data().idclient;
-    $(".modal-body").text("Êtes-vous sûr de vouloir supprimer ce client ?");
+    $("#confirmDeleteModal .modal-title").text("Confirmer la suppression");
+    $("#confirmDeleteModal .modal-body").text(
+      "Êtes-vous sûr de vouloir supprimer ce client ? Ses abonnements Stocki et son historique de paiements seront aussi supprimés.",
+    );
     deleteModal.show();
   });
 

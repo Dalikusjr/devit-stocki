@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use App\Config\Database;
+use App\Enums\PaymentStatus;
 use App\Exceptions\DatabaseException;
 use App\Exceptions\ValidationException;
 use App\Helpers\Response;
@@ -22,17 +23,24 @@ class PaymentController
         $db = Database::getInstance()->getConnection();
         $this->paymentService = new PaymentService(new PaymentRepository($db), new ProjectRepository($db), new ClientRepository($db));
     }
+    // Corps JSON (envoyé par la page) ou, à défaut, champs de formulaire
+    private function input(): array
+    {
+        $data = json_decode(file_get_contents('php://input'), true);
+        return is_array($data) ? $data : $_POST;
+    }
+
     public function createPayment()
     {
         try {
             Validator::validateMethod('POST');
-
-            $idproj  = trim($_POST['idproject'] ?? '');
-            $comment = trim($_POST['comment'] ?? '');
-            $montant = trim($_POST['montant'] ?? '');
-            $status  = trim($_POST['status'] ?? 'inpayer');
-            $dateech = trim($_POST['dateech'] ?? '');
-            $datepay = !empty($_POST['datepay']) ? trim($_POST['datepay']) : null;
+            $data = $this->input();
+            $idproj  = trim($data['idproject'] ?? '');
+            $comment = trim($data['comment'] ?? '');
+            $montant = trim($data['montant'] ?? '');
+            $status  = trim($data['status'] ?? PaymentStatus::UNPAID);
+            $dateech = trim($data['dateech'] ?? '');
+            $datepay = !empty($data['datepay']) ? trim($data['datepay']) : null;
 
             Validator::validateRequiredFields([
                 'ID de projet' => $idproj,
@@ -41,6 +49,10 @@ class PaymentController
                 'Status' => $status,
                 'Date d\'échéance' => $dateech
             ]);
+            Validator::validateValueInEnum($status, PaymentStatus::getValues());
+            Validator::validateMaxLength($comment, 100, 'Commentaire');
+            Validator::validateDate($dateech, "Date d'échéance");
+            if ($datepay !== null) Validator::validateDate($datepay, 'Date de paiement');
             Validator::validatePositiveNumbers(['Montant' => $montant]);
             Validator::validateValidId($idproj);
             $montant = (float) $montant;
@@ -59,9 +71,9 @@ class PaymentController
     public function getPayment()
     {
         try {
-            Validator::validateMethod('POST');
+            Validator::validateMethod('GET');
 
-            $idpay = trim($_POST['editingTranche'] ?? '');
+            $idpay = trim($_GET['id'] ?? '');
             Validator::validateRequiredFields(['ID payment' => $idpay]);
             Validator::validateValidId($idpay);
             $idpay = (int) $idpay;
@@ -84,7 +96,7 @@ class PaymentController
             Validator::validateValidId($idclient);
             $idclient = (int) $idclient;
             Response::success($this->paymentService->getProjectsByClient($idclient), 'Données récupérées avec succès');
-        } catch (ValidationException $e) {
+        } catch (DatabaseException | ValidationException $e) {
             Response::failed(null, $e->getMessage());
         } catch (\Throwable $e) {
             Logger::logError($e);
@@ -106,10 +118,10 @@ class PaymentController
     public function deletePayment()
     {
         try {
-            Validator::validateMethod('POST');
-
-            $idpay = trim($_POST['dueToDelete'] ?? '');
-            $idproj = trim($_POST['idproject'] ?? '');
+            Validator::validateMethod('DELETE');
+            $data = $this->input();
+            $idpay = trim($data['dueToDelete'] ?? '');
+            $idproj = trim($data['idproject'] ?? '');
             Validator::validateRequiredFields([
                 'id de paiement' => $idpay,
                 'id de projet' => $idproj
@@ -118,7 +130,7 @@ class PaymentController
             Validator::validateValidId($idproj);
             $idproj = (int) $idproj;
             $idpay = (int) $idpay;
-            $this->paymentService->deletePayment($idpay);
+            $this->paymentService->deletePayment($idpay, $idproj);
             Response::success($this->paymentService->getPaymentDataForDisplay($idproj), 'Échéance supprimée avec succès');
         } catch (DatabaseException $e) {
             Response::failed(null, $e->getMessage());
@@ -133,15 +145,15 @@ class PaymentController
     public function updatePayment()
     {
         try {
-            Validator::validateMethod('POST');
-
-            $idproj  = trim($_POST['idproject'] ?? '');
-            $idpay   = trim($_POST['editingTranche'] ?? '');
-            $comment = trim($_POST['comment'] ?? '');
-            $montant = trim($_POST['montant'] ?? '');
-            $status  = trim($_POST['status'] ?? 'inpayer');
-            $dateech = trim($_POST['dateech'] ?? '');
-            $datepay = !empty($_POST['datepay']) ? trim($_POST['datepay']) : null;
+            Validator::validateMethod('PATCH');
+            $data = $this->input();
+            $idproj  = trim($data['idproject'] ?? '');
+            $idpay   = trim($data['editingTranche'] ?? '');
+            $comment = trim($data['comment'] ?? '');
+            $montant = trim($data['montant'] ?? '');
+            $status  = trim($data['status'] ?? PaymentStatus::UNPAID);
+            $dateech = trim($data['dateech'] ?? '');
+            $datepay = !empty($data['datepay']) ? trim($data['datepay']) : null;
             Validator::validateRequiredFields([
                 'ID de projet' => $idproj,
                 'ID de paiement' => $idpay,
@@ -150,6 +162,10 @@ class PaymentController
                 'Status' => $status,
                 'Date d\'échéance' => $dateech
             ]);
+            Validator::validateValueInEnum($status, PaymentStatus::getValues());
+            Validator::validateMaxLength($comment, 100, 'Commentaire');
+            Validator::validateDate($dateech, "Date d'échéance");
+            if ($datepay !== null) Validator::validateDate($datepay, 'Date de paiement');
             Validator::validatePositiveNumbers(['Montant' => $montant]);
             Validator::validateValidId($idpay);
             Validator::validateValidId($idproj);

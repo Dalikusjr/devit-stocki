@@ -13,7 +13,7 @@ session_start();
 
 try {
     Validator::validateMethod('POST');
-    
+
     $db = Database::getInstance()->getConnection();
 
     $email = trim($_POST['email'] ?? '');
@@ -37,9 +37,11 @@ try {
     $_SESSION['username'] = $user['prenom'];
     $_SESSION['user_id'] = $user['iduser'];
     $_SESSION['role'] = $user['role'];
-    Helpers::redirect("../index.php");
+    Helpers::redirect("../p-dashboard");
 } catch (\Throwable $e) {
     $_SESSION['error'] = $e->getMessage();
+    // l'e-mail saisi est réaffiché (jamais le mot de passe)
+    $_SESSION['old_email'] = mb_substr(trim((string) ($_POST['email'] ?? '')), 0, 100);
     Logger::logError($e);
-    Helpers::redirect("../index.php");
+    Helpers::redirect("../login");
 }

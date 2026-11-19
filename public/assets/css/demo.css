@@ -280,7 +280,7 @@
       rgba(255, 255, 255, 0.7) 50%,
       rgba(255, 255, 255, 0.4) 100%
     ),
-    url("../assets/img/pages/profile-banner.png");
+    url("../img/pages/profile-banner.png");
   background-size: cover;
   background-position: center;
   border-bottom: 1px solid #e3e6f0;
@@ -572,4 +572,139 @@ tr.shown > td {
 }
 table.dataTable tbody tr.child td {
   background: #fafafa;
+}
+
+/* ===============================
+   Logo DevIt | Stocki dans le header
+   =============================== */
+.devit-brand {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 0.375rem;
+  padding: 0.25rem 0.25rem;
+  transition: opacity 0.15s ease;
+}
+.devit-brand:hover { opacity: 0.85; }
+.devit-brand:focus-visible { outline: 2px solid var(--bs-primary, #7367f0); outline-offset: 2px; }
+.devit-brand-logo {
+  display: block;
+  height: 48px;
+  width: auto;
+}
+@media (max-width: 575.98px) {
+  .devit-brand-logo { height: 36px; }
+}
+
+/* ===============================
+   Header effet verre (glassmorphism)
+   Barre supérieure + barre de menu (ordinateur) + menus déroulants.
+   Le contenu défile sous le header : fond translucide + flou de l'arrière-plan.
+   =============================== */
+:root {
+  --glass-bg: rgba(255, 255, 255, 0.58);
+  --glass-bg-strong: rgba(255, 255, 255, 0.82);
+  --glass-edge: rgba(255, 255, 255, 0.7);
+  --glass-line: rgba(75, 70, 92, 0.08);
+  --glass-shadow: 0 8px 24px -12px rgba(75, 70, 92, 0.25);
+  --glass-blur: saturate(180%) blur(16px);
+}
+
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  /* barre supérieure (toutes tailles d'écran) */
+  #layout-navbar.bg-navbar-theme {
+    background-color: var(--glass-bg) !important;
+    -webkit-backdrop-filter: var(--glass-blur);
+    backdrop-filter: var(--glass-blur);
+    border-bottom: 1px solid var(--glass-line);
+    box-shadow: inset 0 1px 0 var(--glass-edge) !important;
+  }
+
+  /* barre de menu horizontale (ordinateur uniquement : sur petit écran elle devient le menu latéral) */
+  @media (min-width: 1200px) {
+    #layout-menu.menu-horizontal.bg-menu-theme {
+      background-color: var(--glass-bg) !important;
+      -webkit-backdrop-filter: var(--glass-blur);
+      backdrop-filter: var(--glass-blur);
+      border-bottom: 1px solid var(--glass-line);
+      box-shadow: var(--glass-shadow), inset 0 1px 0 var(--glass-edge) !important;
+    }
+    /* sous-menu (Stocki) */
+    #layout-menu.menu-horizontal .menu-inner > .menu-item > .menu-sub {
+      background-color: var(--glass-bg-strong) !important;
+      -webkit-backdrop-filter: var(--glass-blur);
+      backdrop-filter: var(--glass-blur);
+      border: 1px solid var(--glass-edge);
+    }
+  }
+
+  /* menus déroulants du header : notifications et compte */
+  #layout-navbar .dropdown-menu {
+    background-color: var(--glass-bg-strong);
+    -webkit-backdrop-filter: var(--glass-blur);
+    backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-edge);
+  }
+  #layout-navbar .dropdown-notifications-list .list-group-item {
+    background-color: transparent;
+  }
+}
+
+/* préférence système « réduire la transparence » : header opaque */
+@media (prefers-reduced-transparency: reduce) {
+  #layout-navbar.bg-navbar-theme,
+  #layout-menu.menu-horizontal.bg-menu-theme,
+  #layout-navbar .dropdown-menu {
+    background-color: #fff !important;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+/* ===============================
+   Footer fixe (classe layout-footer-fixed sur <html>), même effet verre que le header
+   =============================== */
+:root {
+  --footer-h: 3.25rem;
+}
+.layout-footer-fixed .layout-horizontal .content-footer.devit-footer {
+  z-index: 1075; /* sous les menus déroulants et les fenêtres modales */
+  font-size: 0.8125rem;
+  border-top: 1px solid var(--glass-line, rgba(75, 70, 92, 0.08));
+  box-shadow: 0 -8px 24px -16px rgba(75, 70, 92, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+.devit-footer .footer-container {
+  min-height: var(--footer-h);
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+/* le contenu ne passe jamais sous le footer en fin de page */
+.layout-footer-fixed .content-wrapper {
+  padding-bottom: calc(var(--footer-h) + 1rem) !important;
+}
+.devit-footer-logo { height: 22px; width: auto; }
+.devit-footer .footer-link { color: inherit; opacity: 0.85; }
+.devit-footer .footer-link:hover,
+.devit-footer .footer-link:focus-visible { color: var(--bs-primary, #7367f0); opacity: 1; }
+.devit-footer-dot {
+  display: inline-block;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: #28c76f;
+  margin-right: 0.35rem;
+  vertical-align: 0.05rem;
+}
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .layout-footer-fixed .layout-horizontal .content-footer.bg-footer-theme.devit-footer {
+    background-color: var(--glass-bg, rgba(255, 255, 255, 0.58)) !important;
+    -webkit-backdrop-filter: var(--glass-blur, saturate(180%) blur(16px));
+    backdrop-filter: var(--glass-blur, saturate(180%) blur(16px));
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .layout-footer-fixed .layout-horizontal .content-footer.bg-footer-theme.devit-footer {
+    background-color: #fff !important;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
 }

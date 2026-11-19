@@ -61,14 +61,18 @@ class MaintainRepository
             "SELECT 
                 m.id,
                 m.id_proj,
+                pr.idclient,
                 p.idpay,
                 p.echeance,
                 p.commentaire,
                 p.dateech,
+                p.datepay,
                 p.status 
             FROM  " . self::TABLE . " AS m 
+            INNER JOIN projects AS pr 
+                ON m.id_proj=pr.idproj 
             INNER JOIN payments AS p 
-                ON m.id_proj=p.parent_id 
+                ON m.id=p.parent_id 
                 AND p.parent_type=:parent_type 
             WHERE m.id=:id LIMIT 1"
         );
@@ -93,9 +97,11 @@ class MaintainRepository
                 c.idclient,
                 c.nom AS client_nom,
                 c.tel AS client_tel,
+                p.idpay,
                 p.echeance,
                 p.commentaire,
                 p.dateech,
+                p.datepay,
                 p.status 
             FROM  " . self::TABLE . "  m
             JOIN projects AS pr 
@@ -127,16 +133,13 @@ class MaintainRepository
     {
         $stmt  = $this->connection->prepare(
             "UPDATE  " . self::TABLE . "  
-            SET id_proj=:id_proj,
+            SET id_proj=:id_proj
             WHERE id=:id"
         );
         $stmt->execute([
             ':id' => $id,
             ':id_proj' => $id_proj
         ]);
-        if ($stmt->rowCount() === 0) {
-            throw DatabaseException::operationFailed("L'abonnement n'existe pas ou n'a pas pu être modifié.");
-        }
     }
 
     public function addMaintain(int $id_proj): int

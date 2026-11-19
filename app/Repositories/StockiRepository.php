@@ -43,6 +43,7 @@ class StockiRepository
     {
         $stmt = $this->connection->prepare(
             "SELECT 
+                s.id,
                 s.id_client,
                 s.payment_type,
                 s.startDate,
@@ -76,12 +77,15 @@ class StockiRepository
     {
         $stmt = $this->connection->prepare(
             "SELECT 
+                s.id,
                 s.id_client,
                 s.payment_type,
                 s.startDate,
+                p.idpay,
                 p.echeance,
                 p.commentaire,
                 p.dateech,
+                p.datepay,
                 p.status,
                 c.nom AS client_name,
                 c.tel AS client_tel
@@ -109,31 +113,34 @@ class StockiRepository
         }
     }
 
-    public function updateStocki(int $id, string $payment_type): void
+    public function updateStocki(int $id, string $payment_type, string $startDate): void
     {
         $stmt  = $this->connection->prepare(
             "UPDATE  " . self::TABLE . "  
-                SET payment_type=:payment_type
+                SET payment_type=:payment_type,
+                startDate=:startDate
             WHERE id=:id"
         );
         $stmt->execute([
             ':id' => $id,
             ':payment_type' => $payment_type,
+            ':startDate' => $startDate,
         ]);
     }
 
-    public function addStocki(int $id_client, string $payment_type): int
+    public function addStocki(int $id_client, string $payment_type, string $startDate): int
     {
 
         $stmt = $this->connection->prepare(
             "INSERT INTO " . self::TABLE . " 
-            (id_client,payment_type) 
-            VALUES (:id_client,:payment_type)"
+            (id_client,payment_type,startDate) 
+            VALUES (:id_client,:payment_type,:startDate)"
         );
 
         $stmt->execute([
             ':id_client' => $id_client,
             ':payment_type' => $payment_type,
+            ':startDate' => $startDate,
         ]);
         $id = (int) $this->connection->lastInsertId();
         if ($id <= 0) {

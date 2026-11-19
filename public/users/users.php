@@ -39,7 +39,7 @@ OFFCANVAS - NOUVEAU PROJET
         <div class="input-group input-group-merge">
           <span class="input-group-text"><i class="ti ti-user"></i></span>
           <input type="text" id="userLName" class="form-control dt-userLName"
-            name="userLName" placeholder="Nom" />
+            name="userLName" placeholder="Nom" maxlength="20" />
         </div>
       </div>
 
@@ -48,17 +48,14 @@ OFFCANVAS - NOUVEAU PROJET
         <div class="input-group input-group-merge">
           <span class="input-group-text"><i class="ti ti-user"></i></span>
           <input type="text" id="userFName" class="form-control dt-userFName"
-            name="userFName" placeholder="Prénom" />
+            name="userFName" placeholder="Prénom" maxlength="20" />
         </div>
       </div>
 
       <div class="col-sm-12">
         <label class="form-label" for="role">Rôle</label>
-        <div class="input-group">
-          <span class="input-group-text"><i class="ti ti-briefcase"></i></span>
-          <input type="text" id="role" class="form-control typeahead"
-            name="role" placeholder="Ex: Développeur Frontend" />
-        </div>
+        <select id="role" class="form-select dt-role" name="role"></select>
+        <small class="text-muted">Choisissez dans la liste ou tapez un nouveau rôle (40 caractères max).</small>
       </div>
 
       <div class="col-sm-12">
@@ -66,7 +63,7 @@ OFFCANVAS - NOUVEAU PROJET
         <div class="input-group input-group-merge">
           <span class="input-group-text"><i class="ti ti-at"></i></span>
           <input type="email" id="email" class="form-control dt-email"
-            name="email" placeholder="exemple@mail.com" />
+            name="email" placeholder="exemple@mail.com" maxlength="40" />
         </div>
       </div>
 
@@ -74,8 +71,8 @@ OFFCANVAS - NOUVEAU PROJET
         <label class="form-label" for="mDp">Mot de passe</label>
         <div class="input-group input-group-merge">
           <span class="input-group-text"><i class="ti ti-password"></i></span>
-          <input type="text" id="mDp" class="form-control dt-mDp"
-            name="mDp" placeholder="*********" />
+          <input type="password" id="mDp" class="form-control dt-mDp"
+            name="mDp" placeholder="*********" autocomplete="new-password" />
         </div>
       </div>
 
@@ -84,8 +81,16 @@ OFFCANVAS - NOUVEAU PROJET
         <div class="input-group input-group-merge">
           <span class="input-group-text"><i class="ti ti-phone"></i></span>
           <input type="text" id="tel" class="form-control dt-tel"
-            name="tel" placeholder="+216 XX XXX XXX" />
+            name="tel" placeholder="+216 XX XXX XXX" maxlength="20" />
         </div>
+      </div>
+
+      <div class="col-sm-12">
+        <div class="form-check mt-2">
+          <input class="form-check-input dt-isAdmin" type="checkbox" id="isAdmin" name="isAdmin">
+          <label class="form-check-label" for="isAdmin">Administrateur</label>
+        </div>
+        <small class="text-muted">Gère les utilisateurs et voit les accès des projets.</small>
       </div>
 
       <div class="col-sm-12">

@@ -8,6 +8,17 @@ let editingRow = null;
 let projToDelete = null;
 let projToArchive = null;
 
+// Échappe les données avant insertion dans le HTML
+function escapeHtml(value) {
+  return String(value ?? "").replace(
+    /[&<>"']/g,
+    (c) =>
+      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[
+        c
+      ],
+  );
+}
+
 // Fonction pour générer le contenu de l'accordéon
 function formatDetails(echeances) {
   if (!Array.isArray(echeances) || echeances.length === 0) {
@@ -30,7 +41,7 @@ function formatDetails(echeances) {
     html += `
             <tr>
                 <td>${e.idpay}</td>
-                <td>${e.commentaire}</td>
+                <td>${escapeHtml(e.commentaire)}</td>
                 <td>${Number(e.echeance).toFixed(2)} DT</td>
                 <td>${e.dateech}</td>
                 <td>
@@ -50,13 +61,16 @@ document.addEventListener("DOMContentLoaded", function () {
   // ===============================
   (function () {
     const formAddNewRecord = document.getElementById("form-add-new-record");
+    if (!window.IS_ADMIN) {
+      formAddNewRecord.querySelector(".div-acces").classList.add("d-none");
+    }
 
     setTimeout(() => {
-      const newRecord = document.querySelector(".create-new"),
-        offCanvasElement = document.querySelector("#add-new-record");
+      const offCanvasElement = document.querySelector("#add-new-record");
 
-      if (newRecord) {
-        newRecord.addEventListener("click", function () {
+      if (offCanvasElement) {
+        // Délégation : le bouton est créé par DataTables, parfois après ce délai
+        $(document).on("click", ".create-new", function () {
           if (editingRow) {
             editingRow = null;
             fv.resetForm(true);
@@ -110,7 +124,7 @@ document.addEventListener("DOMContentLoaded", function () {
             "api/project/client",
             { emailtmp },
             (res) => {
-              if (res.success) {
+              if (res.success && res.data) {
                 offCanvasElement.querySelector(".dt-clientLName").value =
                   res.data.nom;
                 offCanvasElement.querySelector(".dt-tel").value = res.data.tel;
@@ -125,7 +139,9 @@ document.addEventListener("DOMContentLoaded", function () {
                   false;
                 offCanvasElement.querySelector(".dt-tel").readOnly = false;
                 offCanvasElement.querySelector(".dt-addr").readOnly = false;
-                showTopNotification(res.message, "danger", "ban");
+                if (!res.success) {
+                  showTopNotification(res.message, "danger", "ban");
+                }
               }
             },
             "json",
@@ -180,13 +196,13 @@ document.addEventListener("DOMContentLoaded", function () {
             notEmpty: { message: "Le nombre d'échéance est requis" },
             numeric: { message: "Veuillez saisir un nombre valide" },
             callback: {
-              message:
-                "Le nombre d'échéance ne peut pas être inférieur ou égale à 0",
+              message: "Le nombre d'échéance doit être 1, 2 ou 3",
               callback: function (input) {
-                const nbrInstall = parseFloat(input.value);
-                if (input.value === "") return true;
-                if (isNaN(nbrInstall)) return true;
-                return nbrInstall > 0;
+                if (input.value === "" || input.disabled) return true;
+                // en modification, un nombre inchangé reste accepté
+                if (editingRow && input.value == editingRow.data().nbech)
+                  return true;
+                return /^[1-3]$/.test(input.value.trim());
               },
             },
           },
@@ -298,7 +314,7 @@ $(document).ready(function () {
         width: "250px",
         orderable: true,
         responsivePriority: 2,
-        render: (data) => `<span class="fw-bold">${data}</span>`,
+        render: (data) => `<span class="fw-bold">${escapeHtml(data)}</span>`,
       },
       {
         targets: 3,
@@ -306,7 +322,7 @@ $(document).ready(function () {
         responsivePriority: 2,
         orderable: false,
         render: (data, type, row) =>
-          `<div><strong>${row.clnom}</strong><br><span class="text-muted"><i class="ti ti-phone me-2"></i>${row.cltel}</span></div>`,
+          `<div><strong>${escapeHtml(row.clnom)}</strong><br><span class="text-muted"><i class="ti ti-phone me-2"></i>${escapeHtml(row.cltel)}</span></div>`,
       },
       {
         targets: 4,
@@ -354,8 +370,11 @@ $(document).ready(function () {
         searchable: false,
         className: "text-center",
         responsivePriority: 9,
+        // accès visibles des seuls administrateurs (le serveur ne les envoie pas aux autres)
         render: () =>
-          '<a href="javascript:;" class="show-data"><i class="ti ti-key me-1"></i></a>',
+          window.IS_ADMIN
+            ? '<a href="javascript:;" class="show-data"><i class="ti ti-key me-1"></i></a>'
+            : '<span class="text-muted" title="Réservé aux administrateurs"><i class="ti ti-lock me-1"></i></span>',
       },
       {
         targets: -1,
@@ -413,7 +432,7 @@ $(document).ready(function () {
     responsive: {
       details: {
         display: $.fn.dataTable.Responsive.display.modal({
-          header: (row) => row.data()["titre"],
+          header: (row) => escapeHtml(row.data()["titre"]),
         }),
         type: "column",
         renderer: (api, rowIdx, columns) => {
@@ -444,9 +463,12 @@ $(document).ready(function () {
       );
     },
   });
-  $(".datatables-projects tbody").on("click", "tr:not(.child)", function () {
+  $(".datatables-projects tbody").on("click", "tr:not(.child)", function (e) {
+    if ($(e.target).closest("a, button, .dropdown-menu, td.control").length)
+      return;
     let tr = $(this);
     let row = table.row(tr);
+    if (!row.data()) return;
     let projectId = row.data().idproj;
 
     if (row.child.isShown()) {
@@ -555,7 +577,7 @@ $(document).ready(function () {
         .querySelector(".dt-nbrInstall")
         .setAttribute("disabled", "");
     }
-    offCanvasElement.querySelector(".dt-acces").value = data.acces;
+    offCanvasElement.querySelector(".dt-acces").value = data.acces ?? "";
     offCanvasEl.show();
   });
 
@@ -611,6 +633,7 @@ $(document).ready(function () {
 
   // Clic sur le bouton "Supprimer" dans le tableau
   $(".datatables-projects tbody").on("click", ".delete-record", function () {
+    projToArchive = null;
     projToDelete = table.row($(this).closest("tr")).data().idproj; // récupérer la ligne
     $("#confirmDeleteModal .modal-title").html("Confirmer la suppression");
     $("#confirmDeleteModal .modal-body").text(
@@ -650,6 +673,7 @@ $(document).ready(function () {
 
   // Clic sur le bouton "Archiver" dans le tableau
   $(".datatables-projects tbody").on("click", ".archive-record", function () {
+    projToDelete = null;
     projToArchive = table.row($(this).closest("tr")).data().idproj;
     $("#confirmDeleteModal .modal-title").html("Confirmer l'archivage");
     $("#confirmDeleteModal .modal-body").text(
@@ -690,7 +714,6 @@ $(document).ready(function () {
   // Clic sur le bouton "Supprimer" dans le tableau
   $(".datatables-projects tbody").on("click", ".show-data", function () {
     const text = table.row($(this).closest("tr")).data().acces;
-    console.log(text);
     $("#confirmDeleteModal .modal-title").html(
       '<i class="ti ti-key me-2"></i> Données d\'accès',
     );
@@ -703,6 +726,8 @@ $(document).ready(function () {
     Modal.show(); // afficher le modal
   });
   $("#confirmDeleteModal").on("hidden.bs.modal", function () {
+    projToDelete = null;
+    projToArchive = null;
     $("#confirmDeleteBtn").removeClass("d-none");
     $("#confirmDeleteModal .modal-title").html("");
     $("#confirmDeleteModal .modal-body").html("");

@@ -9,6 +9,10 @@ $router->get('/maintain/autoComplete', [
     MaintainController::class,
     'getProjectsForAutoComplete'
 ]);
+$router->get('/maintain/history', [
+    MaintainController::class,
+    'getMaintainHistorics'
+]);
 $router->post('/maintain/create', [
     MaintainController::class,
     'createMaintain'

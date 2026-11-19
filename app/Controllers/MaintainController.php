@@ -31,6 +31,13 @@ class MaintainController
     }
 
 
+    // Corps JSON (envoyé par la page) ou, à défaut, champs de formulaire
+    private function input(): array
+    {
+        $data = json_decode(file_get_contents('php://input'), true);
+        return is_array($data) ? $data : $_POST;
+    }
+
     public function getMaintains()
     {
         try {
@@ -94,21 +101,19 @@ class MaintainController
 
         try {
             Validator::validateMethod('POST');
-            $idproj  = trim($_POST['idproj'] ?? '');
-            $idclient = trim($_POST['idclient'] ?? '');
-            $montant = trim($_POST['montant'] ?? '');
-            $status  = trim($_POST['status'] ?? '');
+            $data = $this->input();
+            $idproj  = trim($data['idproj'] ?? '');
+            $montant = trim($data['montant'] ?? '');
+            $status  = trim($data['status'] ?? '');
             Validator::validateRequiredFields([
-                'id de client' => $idclient,
-                'montant d\'abonnement' => $montant,
-                'Project Id' => $idproj,
-                'status d\'abonnement' => $status
+                'Projet' => $idproj,
+                'Montant' => $montant,
+                'Statut' => $status
             ]);
             Validator::validateValueInEnum($status, PaymentStatus::getValues());
             Validator::validateValidId($idproj);
-            Validator::validateValidId($idclient);
             Validator::validatePositiveNumbers(['Montant' => $montant]);
-            $this->maintainService->createMaintain((int)$idproj,  (int)$idclient,  (float)$montant,  $status);
+            $this->maintainService->createMaintain((int)$idproj,  (float)$montant,  $status);
 
             Response::success(null, "Abonnement ajouté avec succès");
         } catch (DatabaseException | ValidationException $e) {
@@ -122,25 +127,23 @@ class MaintainController
     public function updateMaintain()
     {
         try {
-            Validator::validateMethod('POST');
-            $maintainId = trim($_POST['id'] ?? '');
-            $idproj  = trim($_POST['idproj'] ?? '');
-            $idclient = trim($_POST['idclient'] ?? '');
-            $montant = trim($_POST['montant'] ?? '');
-            $status  = trim($_POST['status'] ?? '');
+            Validator::validateMethod('PATCH');
+            $data = $this->input();
+            $maintainId = trim($data['id'] ?? '');
+            $idproj  = trim($data['idproj'] ?? '');
+            $montant = trim($data['montant'] ?? '');
+            $status  = trim($data['status'] ?? '');
             Validator::validateRequiredFields([
-                'Maintain Id' => $maintainId,
-                'Client Id' => $idclient,
-                'montant d\'abonnement' => $montant,
-                'Project Id' => $idproj,
-                'status d\'abonnement' => $status
+                'ID abonnement' => $maintainId,
+                'Projet' => $idproj,
+                'Montant' => $montant,
+                'Statut' => $status
             ]);
             Validator::validateValueInEnum($status, PaymentStatus::getValues());
             Validator::validateValidId($maintainId);
             Validator::validateValidId($idproj);
-            Validator::validateValidId($idclient);
             Validator::validatePositiveNumbers(['Montant' => $montant]);
-            $this->maintainService->updateMaintain((int)$maintainId, (int)$idproj, (int)$idclient, (float)$montant, $status);
+            $this->maintainService->updateMaintain((int)$maintainId, (int)$idproj, (float)$montant, $status);
             Response::success(null, "Abonnement modifié avec succès");
         } catch (DatabaseException | ValidationException $e) {
             Response::failed(null, $e->getMessage());
@@ -153,19 +156,17 @@ class MaintainController
     public function updateMaintainStatus()
     {
         try {
-            Validator::validateMethod('POST');
-            $maintainId = trim($_POST['id'] ?? '');
-            $montant = trim($_POST['montant'] ?? '');
-            $status  = trim($_POST['status'] ?? '');
+            Validator::validateMethod('PATCH');
+            $data = $this->input();
+            $maintainId = trim($data['id'] ?? '');
+            $status  = trim($data['status'] ?? '');
             Validator::validateRequiredFields([
-                'Maintain Id' => $maintainId,
-                'montant d\'abonnement' => $montant,
-                'status d\'abonnement' => $status
+                'ID abonnement' => $maintainId,
+                'Statut' => $status
             ]);
             Validator::validateValueInEnum($status, PaymentStatus::getValues());
             Validator::validateValidId($maintainId);
-            Validator::validatePositiveNumbers(['Montant' => $montant]);
-            $this->maintainService->updateMaintainStatus((int)$maintainId, (float)$montant, $status);
+            $this->maintainService->updateMaintainStatus((int)$maintainId, $status);
             Response::success(null, "Statut de l'abonnement mis à jour avec succès");
         } catch (DatabaseException | ValidationException $e) {
             Response::failed(null, $e->getMessage());
@@ -178,10 +179,10 @@ class MaintainController
     public function deleteMaintain()
     {
         try {
-            Validator::validateMethod('POST');
-            $maintainId = trim($_POST['abonnToDelete'] ?? '');
+            Validator::validateMethod('DELETE');
+            $maintainId = trim($this->input()['abonnToDelete'] ?? '');
             Validator::validateRequiredFields([
-                'Maintain Id' => $maintainId
+                'ID abonnement' => $maintainId
             ]);
             Validator::validateValidId($maintainId);
             $this->maintainService->deleteMaintain((int)$maintainId);

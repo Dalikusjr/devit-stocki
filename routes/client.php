@@ -5,6 +5,10 @@ $router->get('/client', [
     ClientController::class,
     'getClients'
 ]);
+$router->get('/client/history', [
+    ClientController::class,
+    'getClientHistory'
+]);
 $router->post('/client/create', [
     ClientController::class,
     'createClient'

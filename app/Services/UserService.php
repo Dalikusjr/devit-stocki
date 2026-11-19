@@ -14,7 +14,7 @@ class UserService
         return $this->userRepo->getUsers();
     }
 
-    public function createUser(string $email, string $password, string $nom, string $prenom, string $tel, string $role): int
+    public function createUser(string $email, string $password, string $nom, string $prenom, string $tel, string $role, bool $isAdmin): int
     {
         if ($this->userRepo->isEmailExist($email)) {
             throw ValidationException::emailExist();
@@ -27,16 +27,30 @@ class UserService
             $nom,
             $prenom,
             $tel,
-            $role
+            $role,
+            $isAdmin
         );
     }
 
-    public function updateUser(int $id, string $email, string $password, string $nom, string $prenom, string $tel, string $role): void
+    // $currentUserId : l'administrateur qui fait la modification
+    public function updateUser(int $id, string $email, string $password, string $nom, string $prenom, string $tel, string $role, bool $isAdmin, int $currentUserId): void
     {
+        $user = $this->userRepo->getUser($id);
+        if (!$user) {
+            throw ValidationException::NotFound("Utilisateur introuvable.");
+        }
+        if ($user['is_admin'] && !$isAdmin) {
+            if ($id === $currentUserId) {
+                throw ValidationException::NotAllowed("Vous ne pouvez pas retirer vos propres droits d'administrateur.");
+            }
+            if ($this->userRepo->countAdmins() <= 1) {
+                throw ValidationException::NotAllowed("Il doit rester au moins un administrateur.");
+            }
+        }
         if ($this->userRepo->isNewEmailExist($id, $email)) {
             throw ValidationException::emailExist();
         }
-        if ($password) {
+        if ($password !== '') {
             $hashedPassword = $this->passwordHasher::hashPassword($password);
             $this->userRepo->updatePassword($id, $hashedPassword);
         }
@@ -47,12 +61,17 @@ class UserService
             $nom,
             $prenom,
             $tel,
-            $role
+            $role,
+            $isAdmin
         );
     }
 
     public function deleteUser(int $id): void
     {
+        $user = $this->userRepo->getUser($id);
+        if ($user && $user['is_admin'] && $this->userRepo->countAdmins() <= 1) {
+            throw ValidationException::NotAllowed("Il doit rester au moins un administrateur.");
+        }
         $this->userRepo->deleteUser($id);
     }
 }

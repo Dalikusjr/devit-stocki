@@ -96,6 +96,24 @@ document.addEventListener('DOMContentLoaded', function (e) {
               e.element.parentElement.insertAdjacentElement('afterend', e.messageElement);
             }
           });
+          // Connexion : bouton en attente pendant l'envoi
+          instance.on('core.form.valid', function () {
+            const btn = document.getElementById('loginBtn');
+            if (!btn) return;
+            btn.disabled = true;
+            btn.querySelector('.spinner-border').classList.remove('d-none');
+            btn.querySelector('.ti').classList.add('d-none');
+            btn.querySelector('.label').textContent = 'Connexion…';
+          });
+          // retour arrière du navigateur (page restaurée du cache) : bouton réactivé
+          window.addEventListener('pageshow', function () {
+            const btn = document.getElementById('loginBtn');
+            if (!btn) return;
+            btn.disabled = false;
+            btn.querySelector('.spinner-border').classList.add('d-none');
+            btn.querySelector('.ti').classList.remove('d-none');
+            btn.querySelector('.label').textContent = 'Se connecter';
+          });
         }
       });
     }

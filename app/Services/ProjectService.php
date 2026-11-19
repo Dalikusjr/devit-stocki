@@ -35,14 +35,14 @@ class ProjectService
     private function createAdvancePayment(int $idproj, int $idclient, string $comment, float $avancepaye): void
     {
         $dateCourante = new \DateTimeImmutable('first day of this month')->format('Y-m-d');
-        $this->paymentRepo->addInstallment((int) $idproj, SubscriptionType::PROJECT, $avancepaye, $comment, $dateCourante, PaymentStatus::PAID,  $dateCourante);
+        $this->paymentRepo->addInstallment((int) $idproj, SubscriptionType::PROJECT, $avancepaye, $comment !== '' ? $comment : 'Avance', $dateCourante, PaymentStatus::PAID,  $dateCourante);
         $this->historicRepo->addHistoric((int) $idproj, SubscriptionType::PROJECT, $avancepaye, $idclient);
     }
 
     private function createUnpaidPayments(int $idproj, float $avancepaye, float $couttot, int $nbrEcheance, int $nbrMonths): void
     {
         $remaining = $couttot - $avancepaye;
-        $base = $base = floor($remaining / $nbrEcheance);
+        $base = floor($remaining / $nbrEcheance);
         $dateCourante = new \DateTimeImmutable('first day of this month');
         for ($i = 1; $i <= $nbrEcheance; $i++) {
             if ($i === $nbrEcheance) {
@@ -57,7 +57,20 @@ class ProjectService
     private function valideNumberOfInstallment(int $nbrEcheance): void
     {
         if ($nbrEcheance > self::MAX_INSTALLMENTS || $nbrEcheance < self::MIN_INSTALLMENTS) {
-            ValidationException::invalidValue("Nombre d'échéances doit etre >=" . self::MIN_INSTALLMENTS . " et <= " . self::MAX_INSTALLMENTS);
+            throw ValidationException::invalidValue("Le nombre d'échéances doit être compris entre " . self::MIN_INSTALLMENTS . " et " . self::MAX_INSTALLMENTS . ".");
+        }
+    }
+
+    private function validateAmountsAndDates(float $couttot, float $avancepaye, string $datedebut, string $daterenouv): void
+    {
+        if ($couttot <= 0) {
+            throw ValidationException::invalidValue("Le coût total doit être supérieur à 0.");
+        }
+        if ($avancepaye > $couttot) {
+            throw ValidationException::invalidValue("L'avance ne peut pas dépasser le coût total.");
+        }
+        if ($daterenouv < $datedebut) {
+            throw ValidationException::invalidValue("La date de renouvellement doit être postérieure à la date de début.");
         }
     }
 
@@ -89,6 +102,7 @@ class ProjectService
         int $nbrEcheance
     ): void {
         $this->valideNumberOfInstallment($nbrEcheance);
+        $this->validateAmountsAndDates($couttot, $avancepaye, $datedebut, $daterenouv);
         $this->connection->beginTransaction();
         try {
             $idclient = $this->createClientIfNecessary($email, $nom,  $tel,  $adresse);
@@ -109,24 +123,31 @@ class ProjectService
         }
     }
 
-    public function updateProject(int $idproj, string $titre, string $datedebut, string $daterenouv, float $couttot, string $acces, int $nbrEcheance): void
+    // $acces à null : accès inchangés (utilisateur non administrateur)
+    public function updateProject(int $idproj, string $titre, string $datedebut, string $daterenouv, float $couttot, ?string $acces, int $nbrEcheance): void
     {
         $oldProject = $this->projectRepo->getProjectById($idproj);
         $oldInstallments = $this->paymentRepo->countParentInstallments($idproj, SubscriptionType::PROJECT);
-        if ($oldProject && $oldProject['status'] != ProjectStatus::ACTIVE) {
-            throw ValidationException::NotAllowed("Vous ne pouvez pas modifiéer un projet pas active");
+        if ($oldProject['status'] != ProjectStatus::ACTIVE) {
+            throw ValidationException::NotAllowed("Vous ne pouvez pas modifier un projet qui n'est plus actif.");
         }
-        if ($this->paymentRepo->hasPaidInstallment($idproj, SubscriptionType::PROJECT) && ($couttot !== $oldProject['couttot'] || $nbrEcheance !== $oldInstallments)) {
-            throw ValidationException::NotAllowed("Vous ne pouvez pas modifiéer un projet déja a une écheance payer");
+        // Les échéances ne sont régénérées que si le coût ou leur nombre change
+        $regenerate = $couttot !== (float) $oldProject['couttot'] || $nbrEcheance !== $oldInstallments;
+        if ($regenerate && $this->paymentRepo->hasPaidInstallment($idproj, SubscriptionType::PROJECT)) {
+            throw ValidationException::NotAllowed("Vous ne pouvez pas modifier le coût ou le nombre d'échéances d'un projet ayant déjà une échéance payée.");
         }
-        $this->valideNumberOfInstallment($nbrEcheance);
+        if ($regenerate) {
+            $this->valideNumberOfInstallment($nbrEcheance);
+        }
+        $this->validateAmountsAndDates($couttot, 0, $datedebut, $daterenouv);
         $this->connection->beginTransaction();
         try {
-            if ($couttot !== $oldProject['couttot'] || $nbrEcheance !== $oldInstallments) {
+            if ($regenerate) {
                 $this->paymentRepo->deleteUnpaidInstallments($idproj, SubscriptionType::PROJECT);
                 $this->createUnpaidPayments($idproj,  0, $couttot,  $nbrEcheance, self::PAYMENT_INTERVAL_MONTHS);
             }
-            $this->projectRepo->updateProject($idproj,  $titre,  $datedebut,  $daterenouv,  $couttot,  $acces);
+            // valeur déjà chiffrée : réécrite telle quelle
+            $this->projectRepo->updateProject($idproj,  $titre,  $datedebut,  $daterenouv,  $couttot,  $acces ?? (string) $oldProject['acces']);
             $this->connection->commit();
         } catch (\Throwable $e) {
             $this->connection->rollBack();

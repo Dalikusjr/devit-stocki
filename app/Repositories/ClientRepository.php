@@ -17,11 +17,23 @@ class ClientRepository
 
     public function countClients(): int
     {
-        $stmt = $this->connection->prepare(
+        $stmt = $this->connection->query(
             "SELECT COUNT(*) 
             FROM " . self::TABLE
         );
         return (int)$stmt->fetchColumn();
+    }
+
+    public function clientExists(int $id): bool
+    {
+        $stmt = $this->connection->prepare(
+            "SELECT 1 
+            FROM " . self::TABLE . " 
+            WHERE idclient=:id 
+            LIMIT 1"
+        );
+        $stmt->execute([':id' => $id]);
+        return (bool)$stmt->fetch();
     }
 
     public function isEmailExist(string $email): bool
@@ -62,7 +74,7 @@ class ClientRepository
             WHERE email=:email"
         );
         $stmt->execute([':email' => $email]);
-        return $stmt->fetch(PDO::FETCH_ASSOC);
+        return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
     }
 
     public function getClients(): array
@@ -104,9 +116,6 @@ class ClientRepository
             ':tel' => $tel,
             ':adresse' => $adresse
         ]);
-        if ($stmt->rowCount() === 0) {
-            throw DatabaseException::operationFailed("Le client n'existe pas ou n'a pas pu être modifié.");
-        }
     }
 
     public function addClient(string $email, string $nom, string $tel, string $adresse): int

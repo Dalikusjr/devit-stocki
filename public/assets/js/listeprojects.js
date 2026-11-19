@@ -8,6 +8,26 @@ let editingTranche = null;
 let idproject = null;
 let dueToDelete = null;
 const options = { day: "numeric", month: "short", year: "numeric" };
+// Échappe les données avant insertion dans le HTML
+function escapeHtml(value) {
+  return String(value ?? "").replace(
+    /[&<>"']/g,
+    (c) =>
+      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[
+        c
+      ],
+  );
+}
+function formatDate(value) {
+  const d = new Date(value);
+  return isNaN(d) ? "" : new Intl.DateTimeFormat("fr-FR", options).format(d);
+}
+function today() {
+  const d = new Date();
+  return new Date(d.getTime() - d.getTimezoneOffset() * 60000)
+    .toISOString()
+    .slice(0, 10);
+}
 const offCanvas = $("#add-new-record");
 let offCanvasEl = new bootstrap.Offcanvas(offCanvas);
 const deleteModal = new bootstrap.Modal("#confirmDeleteModal");
@@ -26,7 +46,7 @@ $(document).ready(function () {
           notEmpty: { message: "Le montant de tranche est requis" },
           numeric: { message: "Veuillez saisir un nombre valide" },
           callback: {
-            message: "Le montant ne peut pas être inférieur à 0",
+            message: "Le montant doit être supérieur à 0",
             callback: function (input) {
               const montant = parseFloat(input.value);
               if (input.value === "") return true;
@@ -77,15 +97,19 @@ $(document).ready(function () {
       editingTranche,
       comment: $(".dt-commentaire").val(),
       montant: $(".dt-montant").val(),
-      status: $(".dt-status").is(":checked") ? "payer" : "inpayer",
+      status: $(".dt-status").is(":checked") ? "paid" : "unpaid",
       dateech: $(".dt-dateech").val(),
       datepay: $(".dt-datepay").val(),
     };
-    let lnk = editingTranche ? "paiments/update.php" : "paiments/add.php";
-    $.post(
-      lnk,
-      formData,
-      (res) => {
+    $.ajax({
+      url: editingTranche ? "api/payment/update" : "api/payment/create",
+      type: editingTranche ? "PATCH" : "POST",
+      contentType: "application/json",
+      data: JSON.stringify(formData),
+      dataType: "json",
+      error: () =>
+        showTopNotification("Erreur lors de Traitement", "danger", "ban"),
+      success: (res) => {
         if (res.success) {
           const data = res.data;
           const $new = $(renderTranche(data)).hide();
@@ -95,10 +119,11 @@ $(document).ready(function () {
               $new.fadeIn(400);
             });
           } else {
-            const $empty = $(".vide");
+            const $empty = $card.find(".vide");
             if ($empty.length) {
               $empty.fadeOut(400, function () {
                 $(this).remove();
+                $card.find(".tranches-title").show();
                 $list.show().append($new);
                 $new.fadeIn(400);
               });
@@ -110,19 +135,22 @@ $(document).ready(function () {
           updateProgressBar(idproject, data.tranches_paye, data.tranches_total);
           $card.find(".status-en-attente").fadeOut(200, function () {
             $(this)
-              .text(`Reste ${parseFloat(data.reste).toFixed(2)} DT`)
+              .text(`Reste ${parseFloat(data.restepaye).toFixed(2)} DT`)
               .fadeIn(200);
           });
           showTopNotification(res.message, "success", "check");
           offCanvasEl.hide();
+          fv.resetForm(true);
           editingTranche = null;
           idproject = null;
         } else {
           showTopNotification(res.message, "danger", "ban");
         }
       },
-      "json",
-    );
+    });
+  });
+  offCanvas.find("#resetBtn").on("click", function () {
+    fv.resetForm(true);
   });
   const urlParams = new URLSearchParams(window.location.search);
   const idclient = urlParams.get("id");
@@ -132,17 +160,23 @@ $(document).ready(function () {
   // Ajout d'un indicateur de chargement
   // ==========================
   listePro.html(
-    '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i> Chargement des projets...</div>',
+    '<div class="loading-spinner"><span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Chargement des projets...</div>',
   );
 
   // ==========================
   // Récupération des projets via JSON
   // ==========================
-  $.getJSON("paiments/listeprojects.php", { idclient })
+  $.getJSON("api/payment/projects", { idclient })
     .done(function (data) {
       listePro.empty(); // Vider l'indicateur de chargement
 
-      projets = data.data;
+      projets = data.data || [];
+      if (!data.success || projets.length === 0) {
+        listePro.html(
+          `<div class="text-center p-4 text-muted"><i class="ti ti-folder-off fs-1"></i><p class="mt-2">${escapeHtml(data.success ? "Aucun projet pour ce client." : data.message)}</p></div>`,
+        );
+        return;
+      }
 
       // ==========================
       // Génération des cartes projets
@@ -163,7 +197,7 @@ $(document).ready(function () {
             <i class="ti ti-subtask"></i>
           </div>
           <div class="project-info">
-            <h3 class="project-title">${projet.titre}</h3>
+            <h3 class="project-title">${escapeHtml(projet.titre)}</h3>
             <div class="project-details">
               <span class="amount-badge">${parseFloat(projet.couttot).toFixed(2)} DT</span>
               <span class="status-en-attente">Reste ${parseFloat(projet.restepaye).toFixed(2)} DT</span>
@@ -181,7 +215,7 @@ $(document).ready(function () {
         div.append(renderProgressBar(projet));
         let tranchesTitle = $("<h4></h4>")
           .addClass("tranches-title")
-          .html("<i class='fas fa-list-ol'></i> Tranches de paiement");
+          .html("<i class='ti ti-list-numbers me-1'></i> Tranches de paiement");
         tranchesContainer.append(tranchesTitle);
 
         let ul = $("<ul></ul>").addClass("tranches-list");
@@ -218,7 +252,7 @@ $(document).ready(function () {
     .fail(function (error) {
       console.error("Erreur lors de la récupération des projets :", error);
       listePro.html(
-        '<div class="error-message"><i class="fas fa-exclamation-triangle"></i> Erreur lors du chargement des projets</div>',
+        '<div class="error-message"><i class="ti ti-alert-triangle me-1"></i> Erreur lors du chargement des projets</div>',
       );
     });
 });
@@ -229,27 +263,23 @@ $(document).on("click", ".btn-add-tranche", function () {
   offCanvas.find("#titre").text("Nouveau Tranche");
   $(".dt-datepay").prop("disabled", true).val("");
   offCanvas.find(".check_input").prop("checked", false);
+  fv.resetForm(true);
   fv.disableValidator("datepay", "notEmpty");
   updateStatus(offCanvas.find(".check_input"));
   offCanvasEl.show();
-  offCanvas
-    .find("#resetBtn")
-    .on("click", function () {
-      fv.resetForm(true);
-    });
 });
 $(document).on("click", ".ti-edit", function () {
   offCanvas.find("#titre").text("Modifié Tranche");
   editingTranche = $(this).data("id");
   fv.resetForm(true);
   idproject = $(this).closest(".project-card").data("id");
-  $.post(
-    "paiments/getTranche.php",
-    { editingTranche },
+  $.getJSON(
+    "api/payment/installment",
+    { id: editingTranche },
     (res) => {
       if (res.success) {
         const data = res.data;
-        const isChecked = data.status === "payer";
+        const isChecked = data.status === "paid";
         offCanvas.find(".check_input").prop("checked", isChecked);
         if (isChecked) {
           fv.enableValidator("datepay", "notEmpty");
@@ -266,7 +296,6 @@ $(document).on("click", ".ti-edit", function () {
         showTopNotification(res.message, "danger", "ban");
       }
     },
-    "json",
   );
   offCanvasEl.show();
 });
@@ -281,6 +310,9 @@ $(document).on("change", ".dt-status", function () {
   if (isChecked) fv.enableValidator("datepay", "notEmpty");
   else fv.disableValidator("datepay", "notEmpty");
   input.prop("disabled", !isChecked ? true : false);
+  // tranche marquée payée : date du jour proposée par défaut
+  input.val(isChecked ? input.val() || today() : "");
+  if (isChecked) fv.revalidateField("datepay");
 });
 
 function updateStatus(element, other = null) {
@@ -330,7 +362,7 @@ function updateProgressBar(idproj, tranches_paye, tranches_total) {
 function renderTranche(tranche) {
   let li = $("<li></li>").addClass("tranche-item");
 
-  const isPaid = tranche.status === "payer";
+  const isPaid = tranche.status === "paid";
   const uniqueId = `tranche_${tranche.idpay}`;
   li.html(`
             <div class="tranche-content">
@@ -339,7 +371,7 @@ function renderTranche(tranche) {
               </div>
               <div class="tranche-info">
                 <div class="d-flex align-items-center mb-1">
-            <div class="tranche-name fw-bold me-2">${tranche.commentaire}</div>
+            <div class="tranche-name fw-bold me-2">${escapeHtml(tranche.commentaire)}</div>
             <div class="tranche-actions d-flex gap-1">
                 <i class="ti ti-edit text-primary cursor-pointer" title="Modifier" data-id="${tranche.idpay}"></i>
                 <i class="ti ti-trash text-danger cursor-pointer" title="Supprimer" data-id="${tranche.idpay}"></i>
@@ -347,7 +379,7 @@ function renderTranche(tranche) {
             </div>
                 <div class="tranche-details">
                   <span class="tranche-amount">${parseFloat(tranche.echeance).toFixed(2)} DT</span>
-                  <span class="dateech ${isPaid ? "pay-date" : "tranche-date"}"><i class="ti ti-calendar-event me-2"></i>${new Intl.DateTimeFormat("fr-FR", options).format(new Date(tranche.dateech))}</span>
+                  <span class="dateech ${isPaid ? "pay-date" : "tranche-date"}"><i class="ti ti-calendar-event me-2"></i>${formatDate(tranche.dateech)}</span>
                 </div>
               </div>
               <div class="d-none d-md-flex flex-column align-items-end">
@@ -360,7 +392,7 @@ function renderTranche(tranche) {
                 </div>
                 ${
                   isPaid
-                    ? `<span class="datepay pay-date"><i class="ti ti-calendar-event me-2"></i>${new Intl.DateTimeFormat("fr-FR", options).format(new Date(tranche.datepay))}</span>`
+                    ? `<span class="datepay pay-date"><i class="ti ti-calendar-event me-2"></i>${formatDate(tranche.datepay)}</span>`
                     : ""
                 }
               </div>
@@ -375,37 +407,47 @@ function renderTranche(tranche) {
 $(document).on("click", ".ti-trash", function () {
   dueToDelete = $(this).data("id");
   idproject = $(this).closest(".project-card").data("id");
-  $(".modal-body").text("Êtes-vous sûr de vouloir supprimer ce paiement ?");
+  $("#confirmDeleteModal .modal-title").text("Confirmer la suppression");
+  $("#confirmDeleteModal .modal-body").text(
+    "Êtes-vous sûr de vouloir supprimer ce paiement ?",
+  );
   deleteModal.show();
 });
 
 $("#confirmDeleteBtn").on("click", function () {
   if (!dueToDelete) return;
 
-  $.post(
-    "paiments/delete.php",
-    { dueToDelete, idproject },
-    (res) => {
+  $.ajax({
+    url: "api/payment/delete",
+    type: "DELETE",
+    contentType: "application/json",
+    data: JSON.stringify({ dueToDelete, idproject }),
+    dataType: "json",
+    error: () =>
+      showTopNotification("Erreur lors de Traitement", "danger", "ban"),
+    success: (res) => {
       if (res.success) {
+        const data = res.data;
         const $trash = $(`.ti-trash[data-id="${dueToDelete}"]`);
         const $card = $(`.project-card-${idproject}`);
         $card.find(".status-en-attente").fadeOut(200, function () {
           $(this)
-            .text(`Reste ${parseFloat(res.reste).toFixed(2)} DT`)
+            .text(`Reste ${parseFloat(data.restepaye).toFixed(2)} DT`)
             .fadeIn(200);
         });
 
-        updateProgressBar(idproject, res.tranches_paye, res.tranches_total);
+        updateProgressBar(idproject, data.tranches_paye, data.tranches_total);
 
         $trash.closest(".tranche-item").fadeOut(300, function () {
           $(this).remove();
         });
-        if (res.tranches_total == 0) {
+        if (data.tranches_total == 0) {
+          // on garde la liste (masquée) pour pouvoir y rajouter une tranche ensuite
+          $card.find(".tranches-title").hide();
           $card
             .find(".tranches-container")
-            .empty()
-            .html(
-              '<div class="text-center p-4 text-muted"><i class="ti ti-receipt-off fs-1"></i><p class="mt-2">Aucune tranche de paiement pour ce projet.</p></div>',
+            .append(
+              '<div class="vide text-center p-4 text-muted"><i class="ti ti-receipt-off fs-1"></i><p class="mt-2">Aucune tranche de paiement pour ce projet.</p></div>',
             );
         }
 
@@ -417,6 +459,5 @@ $("#confirmDeleteBtn").on("click", function () {
         showTopNotification(res.message, "danger", "ban");
       }
     },
-    "json",
-  );
+  });
 });

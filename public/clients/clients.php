@@ -38,7 +38,7 @@ OFFCANVAS - NOUVEAU CIENT
         <div class="input-group input-group-merge">
           <span class="input-group-text"><i class="ti ti-user-dollar"></i></span>
           <input type="text" id="Name" class="form-control dt-Name"
-            name="Name" placeholder="Nom" />
+            name="Name" placeholder="Nom" maxlength="40" />
         </div>
       </div>
 
@@ -47,7 +47,7 @@ OFFCANVAS - NOUVEAU CIENT
         <div class="input-group input-group-merge">
           <span class="input-group-text"><i class="ti ti-at"></i></span>
           <input type="email" id="email" class="form-control dt-email"
-            name="email" placeholder="exemple@mail.com" />
+            name="email" placeholder="exemple@mail.com" maxlength="40" />
         </div>
       </div>
 
@@ -56,7 +56,7 @@ OFFCANVAS - NOUVEAU CIENT
         <div class="input-group input-group-merge">
           <span class="input-group-text"><i class="ti ti-phone"></i></span>
           <input type="text" id="tel" class="form-control dt-tel"
-            name="tel" placeholder="+216 XX XXX XXX" />
+            name="tel" placeholder="+216 XX XXX XXX" maxlength="40" />
         </div>
       </div>
 
@@ -65,7 +65,7 @@ OFFCANVAS - NOUVEAU CIENT
         <div class="input-group input-group-merge">
           <span class="input-group-text"><i class="ti ti-map-pin"></i></span>
           <input type="text" id="addr" class="form-control dt-addr"
-            name="addr" placeholder="Adresse" />
+            name="addr" placeholder="Adresse" maxlength="100" />
         </div>
       </div>
 
@@ -78,3 +78,46 @@ OFFCANVAS - NOUVEAU CIENT
   </div>
 </div>
 <!-- / OFFCANVAS -->
+<!-- =======================
+MODAL - Historique du client (tous modules)
+======================= -->
+<div class="modal fade" id="clientHistoryModal" tabindex="-1" aria-labelledby="clientHistoryTitle" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="clientHistoryTitle">Historique du client</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row g-3 mb-4">
+          <div class="col-sm-6">
+            <div class="border rounded p-3">
+              <div class="text-muted small">Total encaissé</div>
+              <div class="fs-4 fw-semibold" id="histTotalReceived">–</div>
+            </div>
+          </div>
+          <div class="col-sm-6">
+            <div class="border rounded p-3">
+              <div class="text-muted small">Reste dû (impayés et échéances à venir)</div>
+              <div class="fs-4 fw-semibold" id="histTotalUnpaid">–</div>
+            </div>
+          </div>
+        </div>
+        <h6 class="mb-2"><i class="ti ti-clock-exclamation me-1"></i>Impayés et échéances à venir</h6>
+        <div class="table-responsive mb-4">
+          <table class="table table-sm align-middle mb-0" id="histUnpaid">
+            <thead><tr><th>Échéance</th><th>Type</th><th>Objet</th><th class="text-end">Montant</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <h6 class="mb-2"><i class="ti ti-history me-1"></i>Paiements reçus</h6>
+        <div class="table-responsive">
+          <table class="table table-sm align-middle mb-0" id="histReceived">
+            <thead><tr><th>Date</th><th>Type</th><th>Objet</th><th class="text-end">Montant</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

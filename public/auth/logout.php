@@ -14,7 +14,8 @@ try {
     $db = Database::getInstance()->getConnection();
     $authRepo = new Auth($db);
     $authRepo->logout();
-    Helpers::redirect("../../index.php");
 } catch (\Throwable $e) {
     Logger::logError($e);
 }
+// retour à la page de connexion dans tous les cas
+Helpers::redirect("../login");
