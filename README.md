@@ -1,5 +1,3 @@
-
-
 # DevIt | Stocki
 
 An internal web application that helps DevIt manage development projects, client payments, maintenance contracts, and Stocki software subscriptions in one centralized platform.
@@ -16,15 +14,18 @@ An internal web application that helps DevIt manage development projects, client
 ## Tech Stack
 
 **Backend:**
+
 - PHP 8.4+
 - PDO
 - Composer
 - PHP dotenv
 
 **Database:**
+
 - MySQL 8+
 
 **Frontend:**
+
 - HTML5
 - CSS3
 - JavaScript
@@ -35,6 +36,7 @@ An internal web application that helps DevIt manage development projects, client
 - FormValidation
 
 **Server & Security:**
+
 - Apache
 - Apache mod_rewrite
 - PHP Sessions Authentication
@@ -44,12 +46,12 @@ An internal web application that helps DevIt manage development projects, client
 
 ## Screenshots
 
-| Login | Dashboard |
-|---|---|
+| Login                           | Dashboard                               |
+| ------------------------------- | --------------------------------------- |
 | ![Login](screenshots/login.png) | ![Dashboard](screenshots/dashboard.png) |
 
-| Project Management | Statistics |
-|---|---|
+| Project Management                    | Statistics                                |
+| ------------------------------------- | ----------------------------------------- |
 | ![Projects](screenshots/projects.png) | ![Statistics](screenshots/statistics.png) |
 
 ## Getting Started
@@ -156,25 +158,17 @@ http://localhost/html/devitstocki/public/
 
 Demo credentials should be added here when available.
 
-Role
-
-Email
-
-Password
-
 Administrator
 
-`<ADMIN_EMAIL>`
+`<admin@devitstocki.com>`
 
-`<ADMIN_PASSWORD>`
+`<Test0123>`
 
 User
 
-`<USER_EMAIL>`
+`<user@devitstocki.com>`
 
-`<USER_PASSWORD>`
-
-_Demo accounts only. Never publish production credentials._
+`<Test0123>`
 
 ## Author
 
@@ -182,10 +176,5 @@ _Demo accounts only. Never publish production credentials._
 
 Backend Developer | PHP & Software Engineering
 
--   LinkedIn: [Mohamed Ali Bettaieb](https://www.linkedin.com/in/mohamed-ali-bettaieb/)
--   GitHub: [Dalikusjr](https://github.com/Dalikusjr)
-
-
-
-**Note:** The README reflects the actual project architecture documented in DevIt | Stocki. It does not claim Symfony, Laravel, Angular or JWT integration.
-
+- LinkedIn: [Mohamed Ali Bettaieb](https://www.linkedin.com/in/mohamed-ali-bettaieb/)
+- GitHub: [Dalikusjr](https://github.com/Dalikusjr)
